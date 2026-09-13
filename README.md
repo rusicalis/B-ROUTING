@@ -1,4 +1,4 @@
-# BURNING ROUTINE — GitHub Pages Edition v1.5.0
+# BURNING ROUTINE — GitHub Pages Edition v1.5.2
 
 Cloudflare Worker 서버 의존성을 제거하고 GitHub Pages에서 바로 실행할 수 있도록 변환한 버전입니다.
 
@@ -21,3 +21,10 @@ Cloudflare Worker 서버 의존성을 제거하고 GitHub Pages에서 바로 실
 
 ## PWA
 `manifest.webmanifest`와 `service-worker.js`를 포함하므로 지원 브라우저에서 홈 화면에 설치할 수 있습니다.
+
+
+## V1.5.2 변경사항
+- 앱 아이콘 파일을 별도 `icons/` 폴더 없이 GitHub 저장소 루트에 둘 수 있도록 변경했습니다.
+- `index.html`, `manifest.webmanifest`, `service-worker.js`, 로컬 알림 아이콘 경로를 모두 루트 상대경로로 통일했습니다.
+- B.R 아이콘 디자인과 기존 자동 루틴·로컬 저장·운동 데이터 필터 기능은 그대로 유지합니다.
+- 외부 운동 데이터 오류 시 기본 홈트 운동 fallback 기능도 그대로 유지합니다.
