@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EXERCISES} from '../workout-engine.mjs';
 import {poseFrames} from '../motion-studio.js';
-test('all thirty exercises have finite start and end poses; dynamic exercises move',()=>{
+test('all forty exercises have finite start and end poses; dynamic exercises move',()=>{
  for(const e of EXERCISES){const frames=poseFrames(e.animation);assert.equal(frames.length,2);for(const p of frames)for(const v of Object.values(p)){assert.equal(v.length,3);assert.ok(v.every(Number.isFinite),e.id)}if(!e.holdSeconds)assert.notDeepEqual(frames[0],frames[1],e.id)}
 });
 test('scapular push-up maintains extended elbows while moving the shoulder blades',()=>{

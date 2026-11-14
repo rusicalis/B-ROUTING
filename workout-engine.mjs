@@ -1,5 +1,5 @@
 // Pure catalogue and progression rules. No network, DOM or storage dependencies.
-export const REGIONS=[{id:'full',name:'전신',en:'FULL BODY'},{id:'chest',name:'가슴',en:'CHEST'},{id:'back',name:'등',en:'BACK'},{id:'legs',name:'하체',en:'LEGS'},{id:'glutes',name:'둔근',en:'GLUTES'},{id:'shoulders',name:'어깨',en:'SHOULDERS'},{id:'arms',name:'팔',en:'ARMS'},{id:'core',name:'코어',en:'CORE'}];
+export const REGIONS=[{id:'full',name:'전신',en:'FULL BODY'},{id:'chest',name:'가슴',en:'CHEST'},{id:'shoulders',name:'어깨',en:'SHOULDERS'},{id:'biceps',name:'이두',en:'BICEPS'},{id:'triceps',name:'삼두',en:'TRICEPS'},{id:'back',name:'등',en:'BACK'},{id:'lowerback',name:'허리',en:'LOWER BACK'},{id:'legs',name:'다리',en:'LEGS'}];
 const ex=(id,name,groups,equipment,animation,cues,extra={})=>({id,name,groups:groups.split(','),equipment,animation,cues,cue:cues[1],sets:2,reps:8,rest:60,...(equipment==='kettlebell'?{weight:12,count:1}:{}),...extra});
 export const EXERCISES=[
   ex('knee-pushup','무릎 푸시업','chest,arms','bodyweight','knee-pushup',['손을 어깨보다 조금 넓게 두고 무릎을 바닥에 댑니다.','머리부터 무릎까지 일직선을 유지하며 가슴을 내립니다.','숨을 내쉬며 바닥을 밀고 팔꿈치를 과하게 벌리지 않습니다.']),
@@ -33,19 +33,30 @@ export const EXERCISES=[
   ex('mountain-climber','슬로 마운틴 클라이머','core,legs','bodyweight','climber',['팔을 편 플랭크 자세로 시작합니다.','한쪽 무릎을 가슴 쪽으로 천천히 당깁니다.','골반 높이를 유지하고 발을 되돌린 뒤 반대쪽을 반복합니다.'],{eachSide:true,reps:8}),
   ex('kb-suitcase','케틀벨 수트케이스 홀드','core,arms','kettlebell','suitcase',['한 손으로 케틀벨을 들고 양발로 균등하게 섭니다.','케틀벨 쪽으로 몸이 기울지 않게 복부에 힘을 줍니다.','어깨를 내리고 호흡하며 유지한 뒤 손을 바꿉니다.'],{eachSide:true,holdSeconds:20}),
 ];
+
+EXERCISES.push(
+ ex('band-w','짧은 밴드 W 외회전','back,shoulders','band','band-w',['일자형 밴드 중앙을 양손 사이 약 20cm 간격으로 잡습니다.','팔꿈치를 몸통에 붙이고 손 사이를 약 35cm까지 천천히 벌립니다.','몸통을 비틀지 말고 밴드가 얼굴 쪽으로 튀지 않게 천천히 돌아옵니다.'],{bandType:'straight',bandLength:60,requiresAnchor:false}),
+ ex('band-curl','자가 저항 밴드 컬','biceps','band','band-curl',['밴드 중앙을 약 20~25cm 간격으로 짧게 잡고 한 손은 배 앞에 고정합니다.','팔꿈치를 옆구리에 고정한 채 손 사이 간격을 약 25~45cm 안에서 늘립니다.','고정한 손으로 저항을 조절하며 천천히 내리고 양쪽을 진행합니다.'],{bandType:'straight',bandLength:60,requiresAnchor:false,eachSide:true}),
+ ex('band-triceps','자가 고정 밴드 삼두 익스텐션','triceps','band','band-triceps',['밴드 중앙을 약 25~30cm 간격으로 짧게 잡고 한 손은 가슴 앞에 고정합니다.','작업 팔의 팔꿈치를 옆구리에 고정하고 손을 아래로 펴 삼두를 수축합니다.','손 사이 간격을 약 30~55cm 이내로 조절하고 천천히 되돌립니다.'],{bandType:'straight',bandLength:60,requiresAnchor:false,eachSide:true}),
+ ex('back-extension','프론 백 익스텐션','lowerback','bodyweight','back-extension',['엎드려 팔은 몸 옆에 두고 배에 가볍게 힘을 줍니다.','목을 몸통과 나란히 둔 채 가슴을 바닥에서 조금만 듭니다.','반동이나 과도한 허리 젖힘 없이 천천히 내려옵니다.']),
+ ex('back-hold','프론 백 익스텐션 홀드','lowerback','bodyweight','back-extension',['엎드려 다리를 바닥에 편안히 둡니다.','배를 고정하고 가슴을 조금만 든 자세를 유지합니다.','고개를 뒤로 젖히거나 허리를 과하게 꺾지 않고 호흡합니다.'],{holdSeconds:25,holdPhase:.5})
+);
+for(const [id,name,animation]of [['quiet-march','조용한 제자리 걷기','march'],['step-jack','스텝 잭 · 점프 없음','step-jack'],['shadow-punch','제자리 섀도 복싱','punch'],['side-step','좌우 사이드 스텝','side-step'],['standing-knee','스탠딩 니 리프트','knee-lift']])EXERCISES.push(ex(id,name,['punch'].includes(animation)?'shoulders,core':'legs,core','bodyweight',animation,['양발을 바닥에 두고 편안하게 준비합니다.','한 발 이상은 바닥에 둔 채 작고 부드럽게 움직입니다.','발을 세게 구르지 말고 호흡을 유지하며 반복합니다.'],{kind:'cardio',workSeconds:50,alternating:true,jumping:false}));
+const details={biceps:['kb-row','kb-curl'],triceps:['knee-pushup','pushup','kb-floor-press','close-knee','close-pushup','pike-pushup'],lowerback:['kb-deadlift','good-morning','bird-dog'],legs:['bridge','single-bridge']};
+for(const e of EXERCISES){e.groups=e.groups.filter(g=>g!=='arms');e.jumping=false;for(const [group,ids]of Object.entries(details))if(ids.includes(e.id)&&!e.groups.includes(group))e.groups.push(group)}
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(v))?Number(v):min));
-export function normalizeRegions(regions){const a=[...new Set((Array.isArray(regions)?regions:['full']).filter(r=>REGIONS.some(x=>x.id===r)))];return !a.length||a.includes('full')?['full']:a.sort()}
+export function normalizeRegions(regions){regions=(Array.isArray(regions)?regions:['full']).flatMap(r=>r==='arms'?['biceps','triceps']:r==='glutes'?['legs']:r==='core'?['lowerback']:[r]);const a=[...new Set(regions.filter(r=>REGIONS.some(x=>x.id===r)))];return !a.length||a.includes('full')?['full']:a.sort()}
 export function newTrack(){return {level:0,completed:0,lastCreditDate:null,lastCompletedDate:null,sessionIds:[]}}
-export function trackKey(config={}){return config.mode==='custom'&&config.customIds?.length?'custom:'+config.customIds.join('|'):normalizeRegions(config.regions).join('+')+':routine-'+clamp(config.variant||1,1,3)}
+export function trackKey(config={}){if(config.mode==='weekly')return 'weekly:day-'+clamp(config.planDay||1,1,7);if(config.mode==='cardio')return 'cardio:quiet';return config.mode==='custom'&&config.customIds?.length?'custom:'+config.customIds.join('|'):normalizeRegions(config.regions).join('+')+':routine-'+clamp(config.variant||1,1,3)}
 export function createPlan(config={}){
   const regions=normalizeRegions(config.regions),variant=clamp(config.variant||1,1,3),level=Math.floor(clamp(config.level,0,12));
   let selected=[];
   if(config.mode==='custom')selected=(config.customIds||[]).map(id=>EXERCISES.find(e=>e.id===id)).filter(Boolean).filter((e,i,a)=>a.findIndex(x=>x.id===e.id)===i).slice(0,10);
   if(!selected.length){
-    const targets=regions.includes('full')?['legs','chest','back','glutes','shoulders','core']:regions;
+    const targets=regions.includes('full')?['legs','chest','back','shoulders','biceps','lowerback']:regions;
     // One exercise per region first, then fill with relevant movements.
-    for(const r of targets){const pool=EXERCISES.filter(e=>e.groups.includes(r));const order=[...pool.slice(variant-1),...pool.slice(0,variant-1)];const e=order.find(e=>!selected.includes(e));if(e)selected.push(e)}
-    const pool=EXERCISES.filter(e=>regions.includes('full')||regions.some(r=>e.groups.includes(r)));
+    for(const r of targets){const pool=EXERCISES.filter(e=>e.kind!=='cardio'&&e.groups.includes(r));const order=[...pool.slice(variant-1),...pool.slice(0,variant-1)];const e=order.find(e=>!selected.includes(e));if(e)selected.push(e)}
+    const pool=EXERCISES.filter(e=>e.kind!=='cardio'&&(regions.includes('full')||regions.some(r=>e.groups.includes(r))));
     const order=[...pool.slice(variant-1),...pool.slice(0,variant-1)];
     const count=regions.includes('full')?6:Math.max(3,Math.min(7,regions.length*2));
     for(const e of order)if(selected.length<count&&!selected.includes(e))selected.push(e);
@@ -72,7 +83,7 @@ export function recordCompletion(track,result){
 export function migrateWorkout(state){
   const old=state.workoutConfig||{};
   const ids=(old.customIds||old.customRoutine?.map(e=>e.id)||[]).filter(id=>EXERCISES.some(e=>e.id===id));
-  state.workoutConfig={...old,schema:2,regions:normalizeRegions(old.regions),variant:clamp(old.variant||1,1,3),mode:old.mode==='custom'&&ids.length?'custom':'auto',customIds:[...new Set(ids)]};
+  state.workoutConfig={...old,schema:3,planDay:clamp(old.planDay||1,1,7),regions:normalizeRegions(old.regions),variant:clamp(old.variant||1,1,3),mode:old.schema>=3&&['weekly','cardio','auto','custom'].includes(old.mode)?old.mode:'weekly',customIds:[...new Set(ids)]};
   state.trainingTracks=state.trainingTracks&&typeof state.trainingTracks==='object'?state.trainingTracks:{};
   return state;
 }
