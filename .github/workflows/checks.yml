@@ -14,4 +14,4 @@ jobs:
         with:
           node-version: '22'
       - run: node --test
-      - run: node --check app.js && node --check motion-studio.js && node --check service-worker.js
+      - run: node --check app.js && node --check illustrated-guide.mjs && node --check service-worker.js

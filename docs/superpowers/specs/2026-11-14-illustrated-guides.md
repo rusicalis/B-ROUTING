@@ -1,0 +1,9 @@
+# Illustrated follow-along guides
+
+The user rejects the procedural trainer's unnatural posture, asks the assistant to choose the most followable method, then explicitly excludes all real-person video. Use illustrated demonstrations only. Restore the original app's illustrated GIF approach where a matching motion exists. Add illustrated start/target/return steps for other motions, with visible stage controls and the existing workout clock. Never interpolate anatomical joints or insert another live3D avatar.
+
+Preserve the seven-day20–30minute split,40 exercises, equipment, completion-based progression and all local task/history data. Keep exact pause/resume, target holds and left/right transitions. Pause the illustration when the session pauses, rests or finishes. The same set clock controls the visual progress and repetition labels. Preview speed and manual scrubbing are independent of working-set timing.
+
+Use the source URLs used by the user-provided original app for illustrated GIFs, retaining Gym visual attribution. Bundle the selected application illustrations from RepDB's free in-app tier and CC0 Open Exercise Illustrations with their licenses. Band hand-anchoring, small prone chest lift and quiet side-step diagrams are application-specific SVG instructions. Do not include real-person imagery, video embeds, video files, runtime WebGL/Three.js or the rejected trainer. Local illustrations work offline; original remote GIFs are cached after their first successful view and have a written fallback.
+
+Validate every mapped illustration, both poses, apparatus and load; do not label an unsuitable bench/anchor version as an exact demonstration. Verify375×629 and375×812, WebKit, true frame pause, source failure, aborted loads, holds, left/right changes, session restore and progression. Publish to the already-authorized GitHub main/Pages destination and verify the public app.

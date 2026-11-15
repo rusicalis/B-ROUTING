@@ -1,0 +1,27 @@
+const {chromium,webkit,devices}=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-core');
+const assert=require('node:assert/strict');
+const fs=require('node:fs/promises');
+const origin=process.env.TEST_URL||'http://127.0.0.1:4173',out=process.env.TEST_OUTPUT_DIR||'.';
+(async()=>{
+ for(const engine of ['chromium','webkit']){
+  const browser=engine==='chromium'?await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--no-sandbox']}):await webkit.launch({headless:true});
+  try{
+   const context=await browser.newContext({...devices['iPhone 13 Mini'],reducedMotion:'reduce'}),page=await context.newPage(),errors=[],forbidden=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(/youtube|ytimg|vimeo|dvidshub|\.mp4|trainer\.glb|three\.module|human-trainer/.test(r.url()))forbidden.push(r.url())});
+   await page.goto(origin+'/?view=workout');await page.waitForSelector('#motionCanvas[data-media-ready=true]');await page.locator('[data-program-day="2"]').tap();await page.waitForSelector('#motionCanvas[data-media-ready=true] canvas');
+   await page.locator('#autoGenerateWorkout').tap();await page.waitForSelector('#motionCanvas[data-media-ready=true] canvas');await page.locator('[data-guide-phase="1"]').tap();assert.equal(await page.locator('#motionCanvas').getAttribute('data-guide-phase'),'1');
+   assert.equal(await page.locator('iframe,video').count(),0);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);await page.waitForFunction(()=>!document.querySelector('.trainingToast.show'));await page.evaluate(()=>scrollTo(0,0));const fit=await page.locator('#motionCanvas canvas').evaluate(c=>{const a=c.getBoundingClientRect(),b=c.parentElement.getBoundingClientRect();return a.width<=b.width+.5&&a.height<=b.height+.5&&Math.abs(a.width/a.height-c.width/c.height)<.01});assert.equal(fit,true,'the complete GIF must fit the frame without cropping');await page.screenshot({path:out+'/그림시범_'+engine+'_아이폰13미니.png',scale:'css'});
+   await page.locator('#startWorkout').tap();await page.waitForTimeout(3550);assert.match(await page.locator('#phaseRemain').innerText(),/다음 반복 [0-9]\.[0-9]초/);await page.locator('#pauseWorkout').tap();const frozen=await page.locator('#motionCanvas canvas').evaluate(c=>c.toDataURL());await page.waitForTimeout(650);assert.ok(await page.locator('#motionCanvas canvas').evaluate(c=>c.toDataURL())===frozen,'a paused session must freeze the GIF pixels');await page.locator('#pauseWorkout').tap();await page.waitForFunction(before=>document.querySelector('#motionCanvas canvas').toDataURL()!==before,frozen,{timeout:5500});
+   await page.locator('#nextWorkout').tap();const rest=await page.locator('#motionCanvas canvas').evaluate(c=>c.toDataURL());await page.waitForTimeout(500);assert.equal(await page.locator('#motionCanvas canvas').evaluate(c=>c.toDataURL()),rest,'rest holds the demonstration');await page.locator('#skipRest').tap();await page.locator('#stopWorkout').tap();
+   assert.deepEqual(errors,[]);assert.deepEqual(forbidden,[]);console.log('PASS '+engine+' iPhone illustrated GIF, stage buttons, true frame pause/resume, rest, no video or3D requests');
+   if(engine==='chromium'){
+    await page.goto(origin+'/workout-engine.mjs');
+    const gallery=await page.evaluate(async()=>{
+     const {IllustratedGuide}=await import('./illustrated-guide.mjs'),{EXERCISES}=await import('./workout-engine.mjs');document.head.innerHTML='<link rel="stylesheet" href="./illustrated-guide.css">';document.body.innerHTML='<div style="position:relative;width:350px;height:400px"><div id="review" style="position:absolute;inset:0"></div></div>';const failures=[],guide=new IllustratedGuide(document.querySelector('#review'),e=>failures.push(e.message));guide.playing=false;const gallery=[];
+     for(const e of EXERCISES){if(!await guide.setExercise({...e,cycleSeconds:4}))throw Error('Guide failed '+e.id+' '+failures.join(','));guide.setContext({phase:'ready'});const shots=[];for(const phase of [0,.5]){guide.phase=phase;guide.draw();shots.push(guide.gif?guide.gif.canvas.toDataURL():new URL(guide.media.frames[phase?1:0],location.href).href)}gallery.push({id:e.id,name:e.name,provider:guide.media.provider,shots})}
+     guide.setExercise(EXERCISES.find(e=>e.id==='kb-row'));await guide.ready;guide.setContext({phase:'work',setElapsed:40.1});if(guide.host.dataset.guideSide!=='1')throw Error('Left/right transition');guide.dispose();return gallery;
+    });
+    assert.equal(gallery.length,40);await fs.writeFile(out+'/illustration-review.json',JSON.stringify(gallery));await page.setViewportSize({width:1800,height:1000});await page.setContent('<body style="margin:0;padding:20px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;background:#edf5f1;font-family:Arial">'+gallery.map(e=>'<div style="background:white;padding:8px"><div style="display:flex;gap:3px">'+e.shots.map(src=>'<img style="width:50%;height:190px;object-fit:contain" src="'+src+'">').join('')+'</div><b>'+e.name+'</b><br><small>'+e.id+' · '+e.provider+'</small></div>').join('')+'</body>');await page.waitForFunction(()=>[...document.images].every(i=>i.complete));await page.screenshot({path:out+'/illustrations-all40.png',fullPage:true});console.log('PASS all40 illustrated sources decode; both poses rendered and left/right mirror verified');
+   }
+  }finally{await browser.close()}
+ }
+})().catch(e=>{console.error(e);process.exitCode=1});

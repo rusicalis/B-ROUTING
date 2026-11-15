@@ -1,4 +1,4 @@
-# BURNING ROUTINE 3.0
+# BURNING ROUTINE 3.1
 
 주 7일 근력 운동과 할 일 관리용 한국어 PWA입니다. 맨몸 + 12kg 케틀벨 1개 + 60cm 일자 밴드를 사용합니다.
 
@@ -21,13 +21,17 @@
 - 완료+컨디션에 따른 단계 상승, 당일 중복 상승 방지, 일시정지와 이어하기를 지원합니다.
 - 기존 할 일/테마/완료 기록을 유지합니다. 운동 일정은 주7일 분할로 갱신합니다.
 
-## 인체 모델과 iPhone 13 mini
+## 그림 동작 가이드와 iPhone 13 mini
 
-Quaternius의 CC0 연결형 인체 메시와65개 관절을 사용합니다. 갈색 옆가르마와 둥근 안경은 추가 제작했습니다. 얼굴 표정/눈 깜박임/호흡/땀, 휴식 중 땀 닦기/힘내기/회복 제스처가 있습니다. 큰 제스처가 작업 세트의 운동 자세를 대신하지 않습니다.
+실사 영상과3D 캐릭터를 사용하지 않습니다. 기존 앱의 그림 GIF 방식과 시작/동작/복귀 자세 그림을 사용합니다. 관절을 새로 변형하거나 중간 자세를 추정하지 않습니다. 각 운동의 그림과 타이머는 같은 세트 시간에 맞춰 진행하며, 일시정지·휴식·완료 시 그림도 멈춥니다. 양쪽 운동은 해당 시점에 좌우를 전환합니다.
 
-375px 너비, Safari 도구 막대가 있는375×629 영역과375×812 홈 화면 모드를 검증합니다. 최소44px 터치 영역, 안전 여백, 하단 메뉴/운동 버튼 고정, 설정 접기, 모바일 동작 선택을 제공합니다. 모바일 DPR상한1.5, 최대30fps, 그림자 해제와 비가시 렌더링 중단으로 부담을 줄였습니다. 실제 iPhone 하드웨어의 발열·배터리 수치는 측정하지 않았습니다.
+준비/동작/복귀 버튼, 재생 속도, 구간 탐색은 운동 시작 전 자세 확인용입니다. 작업 세트 중에는 실제 운동 타이머를 따릅니다. 유지 운동은 목표 자세를 고정합니다. 단계 그림은 연속 촬영이나 모션 캡처가 아닙니다.
 
-모델은 자체 제작 운동 가이드이며 실제 촬영/모션 캡처/개인별 자세 분석은 아닙니다. 출처와 라이선스는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요. 데이터는 브라우저의 기존 localStorage 키에 저장됩니다.
+375×629 Safari 영역과375×812 홈 화면 크기, 최소44px 터치 영역, 안전 여백과 고정 하단 버튼을 유지합니다. 그림은 Canvas2D/이미지로 표시해 WebGL과 모델 파일을 불러오지 않습니다. 실제 iPhone 하드웨어의 발열·배터리 수치는 측정하지 않았습니다.
+
+앱에 포함한 그림은 최초 온라인 설치 이후 오프라인에서도 표시됩니다. 기존 원격 GIF는 최초 표시 후 캐시하며, 처음 여는 GIF는 인터넷 연결이 필요합니다. 그림 로딩에 실패해도 글로 된 자세 순서와 운동 기록 기능을 계속 사용할 수 있습니다. 출처와 이용 조건은 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)를 확인하세요.
+
+Exercise data by [RepDB (repdb.co)](https://repdb.co). 선택한 무료 그림만 이 앱의 가이드로 사용하며, 원본 데이터셋 전체를 배포하지 않습니다.
 
 ## 개발과 검증
 
@@ -36,7 +40,7 @@ Quaternius의 CC0 연결형 인체 메시와65개 관절을 사용합니다. 갈
 ```sh
 node --test
 node --check app.js
-node --check motion-studio.js
+node --check illustrated-guide.mjs
 node --check service-worker.js
 ```
 
@@ -46,6 +50,6 @@ Playwright Core와 Chrome/WebKit으로 실행하는 검증 스크립트는 scrip
 - browser-session-regressions.cjs: 일시정지·재개, 최종 평가, 자정 전후
 - iphone-mini.cjs / iphone-fallback.cjs: iPhone 화면/터치/WebKit/텍스트 가이드
 - weekly-program.cjs: 주간 일정, 별도 유산소, 날짜 변경
-- trainer-reactions.cjs: 표정/땀/휴식 제스처와 작업 세트 복귀
+- illustrated-guide.cjs:40종 그림 로딩, 실제 GIF 정지/재개, 좌우 전환, 실사·3D 요청 없음
 
 GitHub main 업로드 시 기존 Pages가 자동 배포하고 Workout checks가 Node 테스트를 수행합니다.

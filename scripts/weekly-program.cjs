@@ -2,7 +2,7 @@ const {chromium,devices}=require(process.env.PLAYWRIGHT_CORE_PATH||'playwright-c
 const assert=require('node:assert/strict');
 (async()=>{const browser=await chromium.launch({executablePath:process.env.CHROME_PATH||'C:/Program Files/Google/Chrome/Application/chrome.exe',headless:true,args:['--use-angle=swiftshader','--enable-webgl','--no-sandbox']});try{
  const page=await browser.newPage({...devices['iPhone 13 Mini'],reducedMotion:'reduce'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto((process.env.TEST_URL||'http://127.0.0.1:4173')+'/?view=workout');await page.waitForSelector('#motionCanvas[data-model-ready="true"]');
+ await page.goto((process.env.TEST_URL||'http://127.0.0.1:4173')+'/?view=workout');await page.waitForSelector('#motionCanvas[data-media-ready="true"]');
  assert.equal(await page.locator('[data-program-day]').count(),7);assert.equal(await page.locator('#weeklyCoverage span').count(),7);
  for(let day=1;day<=7;day++){await page.locator('[data-program-day="'+day+'"]').tap();assert.match(await page.locator('#routineSummary').innerText(),/약 2[0-9]/);assert.equal(await page.locator('.exerciseTile').count(),5);}
  await page.locator('[data-program-day="1"]').tap();await page.locator('#autoGenerateWorkout').tap();await page.locator('#startWorkout').tap();await page.waitForTimeout(3300);
