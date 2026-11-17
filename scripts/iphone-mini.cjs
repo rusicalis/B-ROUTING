@@ -6,7 +6,7 @@ const origin=process.env.TEST_URL||'http://127.0.0.1:4173';
  try{
   const context=await browser.newContext({...devices['iPhone 13 Mini'],reducedMotion:'reduce'}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(origin+'/?view=workout');await page.waitForSelector('#motionCanvas[data-media-ready="true"]');
-  for(const selector of ['[data-program-mode="weekly"]','[data-program-day="1"]','#previewToggle','button[data-guide-phase="1"]','#startWorkout','#nav button']){
+  for(const selector of ['[data-program-mode="preset"]','[data-program-day="1"]','#previewToggle','button[data-guide-phase="1"]','#startWorkout','#nav button']){
     const rects=await page.locator(selector).evaluateAll(items=>items.map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height}}));
     assert.ok(rects.every(r=>r.w>=44&&r.h>=44),selector+' must have 44px touch targets');
   }

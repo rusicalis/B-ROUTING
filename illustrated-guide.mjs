@@ -21,7 +21,7 @@ export class IllustratedGuide{
   const note=document.querySelector('#mediaNote');if(note){note.textContent=this.media?.note||'';note.hidden=!note.textContent}
   const hint=document.querySelector('#studioHint');if(hint)hint.textContent=this.media?.provider==='gif'?'그림 움직임과 타이머를 함께 따라해 주세요':'준비 그림 → 동작 그림 → 복귀를 따라해 주세요';
   this.ready=(async()=>{
-   if(!this.media)throw Error('No illustrated guide');
+   if(!this.media||this.media.provider==='unavailable')throw Error('No exact illustrated guide');
    if(this.media.provider==='gif'){
     const bytes=new Uint8Array(await(await gifResponse(this.media.url,this.controller.signal)).arrayBuffer());if(token!==this.token)return false;
     const reader=new GifReader(bytes);if(reader.width>800||reader.height>800||reader.numFrames()>500)throw Error('Oversized illustration');
@@ -32,7 +32,7 @@ export class IllustratedGuide{
     const images=this.media.frames.map((src,i)=>{const img=new Image();img.src=src;img.alt=exercise.name+' · '+(i?'동작 자세':'준비 자세');img.className='guideImage';return img});await Promise.all(images.map(img=>img.decode()));if(token!==this.token)return false;this.images=images;images.forEach(img=>this.figure.append(img));
    }
    if(token!==this.token)return false;this.host.dataset.mediaReady='true';this.host.dataset.mediaState='ready';this.onReady();this.draw();return true;
-  })().catch(error=>{if(token!==this.token||this.controller.signal.aborted)return false;this.host.dataset.mediaState='unavailable';this.host.dataset.mediaError=error.message;this.onError(error);return false});return this.ready;
+  })().catch(error=>{if(token!==this.token||this.controller.signal.aborted)return false;this.host.dataset.mediaState='unavailable';this.host.dataset.mediaError=error.message;const missing=this.media?.provider==='unavailable';const empty=document.querySelector('#motionEmpty');if(empty){empty.querySelector('b').textContent=missing?'이 장비와 일치하는 그림이 없습니다':'그림을 불러오지 못했습니다';empty.querySelector('p').textContent=missing?'요청 원안은 아래 자세 설명을 따라 확인해 주세요. 기본 시간 맞춤에서는 그림이 있는 대체 동작을 제공합니다.':'아래 자세 안내는 계속 볼 수 있습니다. 연결을 확인하고 다시 불러와 주세요.';empty.querySelector('button').hidden=missing}this.onError(error);return false});return this.ready;
  }
  setContext(context){
   if(this.context.phase==='work'&&context.phase!=='work'){const t=guideTiming(this.exercise,{...this.context,setElapsed:(this.context.setElapsed||0)+(performance.now()-this.contextAt)/1000},this.phase,this.side);this.phase=t.phase;this.side=t.side}
@@ -47,7 +47,7 @@ export class IllustratedGuide{
   document.querySelectorAll('button[data-guide-phase]').forEach(button=>{const selected=Number(button.dataset.guidePhase)===state.step;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
   if(context.phase==='ready'){const label=document.querySelector('#phaseLabel');if(label)label.textContent=state.label}
   if(this.images)this.images.forEach((img,i)=>img.hidden=i!==state.imageIndex);
-  if(this.gif){const g=this.gif;let target=0,elapsed=0;const visualPhase=(state.phase+(this.media.offset||0))%1;for(let i=0;i<g.frames.length;i++){elapsed+=Math.max(.02,(g.frames[i].delay||10)/100);if(elapsed>visualPhase*g.duration){target=i;break}}this.drawGifFrame(target)}
+  if(this.gif){const g=this.gif;let target=0,elapsed=0;const visualPhase=this.exercise.holdSeconds&&context.phase==='work'?(this.media.holdPhase??.5):(state.phase+(this.media.offset||0))%1;for(let i=0;i<g.frames.length;i++){elapsed+=Math.max(.02,(g.frames[i].delay||10)/100);if(elapsed>visualPhase*g.duration){target=i;break}}this.drawGifFrame(target)}
  }
  drawGifFrame(target){
   const g=this.gif;if(g.decoded===target)return;const {reader,frames,pixels,ctx}=g;

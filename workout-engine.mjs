@@ -1,3 +1,4 @@
+import {hasExercisePreview} from './exercise-media-data.mjs';
 // Pure catalogue and progression rules. No network, DOM or storage dependencies.
 export const REGIONS=[{id:'full',name:'전신',en:'FULL BODY'},{id:'chest',name:'가슴',en:'CHEST'},{id:'shoulders',name:'어깨',en:'SHOULDERS'},{id:'biceps',name:'이두',en:'BICEPS'},{id:'triceps',name:'삼두',en:'TRICEPS'},{id:'back',name:'등',en:'BACK'},{id:'lowerback',name:'허리',en:'LOWER BACK'},{id:'legs',name:'다리',en:'LEGS'}];
 const ex=(id,name,groups,equipment,animation,cues,extra={})=>({id,name,groups:groups.split(','),equipment,animation,cues,cue:cues[1],sets:2,reps:8,rest:60,...(equipment==='kettlebell'?{weight:12,count:1}:{}),...extra});
@@ -42,6 +43,20 @@ EXERCISES.push(
  ex('back-hold','프론 백 익스텐션 홀드','lowerback','bodyweight','back-extension',['엎드려 다리를 바닥에 편안히 둡니다.','배를 고정하고 가슴을 조금만 든 자세를 유지합니다.','고개를 뒤로 젖히거나 허리를 과하게 꺾지 않고 호흡합니다.'],{holdSeconds:25,holdPhase:.5})
 );
 for(const [id,name,animation]of [['quiet-march','조용한 제자리 걷기','march'],['step-jack','스텝 잭 · 점프 없음','step-jack'],['shadow-punch','제자리 섀도 복싱','punch'],['side-step','좌우 사이드 스텝','side-step'],['standing-knee','스탠딩 니 리프트','knee-lift']])EXERCISES.push(ex(id,name,['punch'].includes(animation)?'shoulders,core':'legs,core','bodyweight',animation,['양발을 바닥에 두고 편안하게 준비합니다.','한 발 이상은 바닥에 둔 채 작고 부드럽게 움직입니다.','발을 세게 구르지 말고 호흡을 유지하며 반복합니다.'],{kind:'cardio',workSeconds:50,alternating:true,jumping:false}));
+EXERCISES.push(
+ ex('kb-lying-triceps','케틀벨 라잉 삼두 익스텐션','triceps','kettlebell','lying-triceps',['바닥에 누워 무릎을 세우고 케틀벨 손잡이를 양손으로 단단히 잡습니다.','위팔은 위를 향하게 유지하고 팔꿈치만 접어 머리 옆으로 천천히 내립니다.','손목을 곧게 유지하며 팔을 펴고, 12kg을 제어하기 어렵다면 세트를 중단합니다.'],{reps:6}),
+ ex('chair-dip','의자 삼두 딥스','triceps,shoulders','chair','chair-dip',['바퀴 없는 의자를 벽에 고정하고 양손으로 좌판 앞부분을 잡습니다.','무릎을 굽히고 엉덩이를 의자 가까이 둔 채 팔꿈치를 뒤로 접습니다.','어깨가 불편하지 않은 얕은 범위에서 내려갔다가 팔로 밀어 올라옵니다.'],{reps:6,requiresStableChair:true}),
+ ex('kb-shoulder-press','케틀벨 원암 숄더 프레스','shoulders,triceps','kettlebell','shoulder-press',['케틀벨을 한쪽 어깨 앞에 두고 반대 손으로 받쳐 준비합니다.','복부에 힘을 주고 허리를 젖히지 않으며 팔을 위로 밀어 올립니다.','손목을 곧게 유지하며 어깨 앞으로 천천히 내린 뒤 손을 바꿉니다.'],{eachSide:true,reps:5}),
+ ex('band-lateral-raise','자가 고정 밴드 사이드 레이즈','shoulders','band','lateral-raise',['60cm 일자 밴드를 양손으로 잡고 한 손을 반대쪽 골반 옆에 고정합니다.','작업 팔의 팔꿈치를 조금 굽혀 옆으로 들어 올리되 어깨 높이를 넘기지 않습니다.','짧은 밴드를 과도하게 늘리지 말고 고정 손으로 저항을 조절한 뒤 손을 바꿉니다.'],{eachSide:true,reps:8,bandType:'straight',bandLength:60,requiresAnchor:false}),
+ ex('abs-crunch','복근 크런치','core','bodyweight','crunch',['누워 무릎을 세우고 손을 가슴 앞에 둡니다.','목을 당기지 말고 갈비뼈를 골반 쪽으로 모으며 어깨만 조금 듭니다.','숨을 들이쉬며 천천히 내려오고 반동 없이 반복합니다.'],{workSeconds:30,cycleSeconds:4}),
+ ex('bridge-hold','글루트 브리지 홀드','legs,glutes,lowerback','bodyweight','bridge',['누워 무릎을 세우고 발을 골반너비로 둡니다.','엉덩이를 들어 어깨부터 무릎을 일직선으로 유지합니다.','허리를 과하게 젖히지 말고 호흡하며 유지합니다.'],{holdSeconds:30}),
+ ex('reverse-plank','리버스 플랭크','back,lowerback,legs,core','bodyweight','reverse-plank',['앉아 다리를 뻗고 손은 어깨 뒤 바닥을 짚습니다.','가슴을 열고 골반을 들어 어깨부터 발뒤꿈치까지 곧게 만듭니다.','목을 뒤로 꺾지 말고 엉덩이가 처지지 않는 범위에서 호흡하며 유지합니다.'],{holdSeconds:30})
+);
+EXERCISES.push(
+ ex('bodyweight-triceps','맨몸 무릎 삼두 익스텐션','triceps','bodyweight','triceps',['무릎을 바닥에 대고 손은 어깨 앞에 둡니다.','팔꿈치를 몸통 가까이 접어 팔꿈치와 아래팔을 바닥 쪽으로 내립니다.','복부를 고정하고 손바닥으로 밀어 팔꿈치를 폅니다.'],{reps:6}),
+ ex('kb-concentration-curl','케틀벨 원암 컨센트레이션 컬','biceps','kettlebell','curl',['흔들리지 않는 좌판에 앉아 다리를 벌리고 한 손으로 케틀벨을 잡습니다.','작업 팔의 위팔을 같은 쪽 허벅지 안쪽에 대고 팔꿈치를 접어 올립니다.','몸통을 흔들지 않고 천천히 내린 뒤 양쪽을 진행합니다.'],{eachSide:true,reps:6,requiresStableChair:true}),
+ ex('kb-curl-hold','케틀벨 컨센트레이션 컬 홀드','biceps','kettlebell','curl',['안정된 좌판에 앉아 한쪽 위팔을 허벅지 안쪽에 댑니다.','케틀벨을 잡고 팔꿈치를 접은 자세를 유지합니다.','손목을 꺾거나 몸통을 흔들지 말고 양쪽을 진행합니다.'],{eachSide:true,reps:0,holdSeconds:15,requiresStableChair:true})
+);
 const details={biceps:['kb-row','kb-curl'],triceps:['knee-pushup','pushup','kb-floor-press','close-knee','close-pushup','pike-pushup'],lowerback:['kb-deadlift','good-morning','bird-dog'],legs:['bridge','single-bridge']};
 for(const e of EXERCISES){e.groups=e.groups.filter(g=>g!=='arms');e.jumping=false;for(const [group,ids]of Object.entries(details))if(ids.includes(e.id)&&!e.groups.includes(group))e.groups.push(group)}
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(v))?Number(v):min));
@@ -49,14 +64,15 @@ export function normalizeRegions(regions){regions=(Array.isArray(regions)?region
 export function newTrack(){return {level:0,completed:0,lastCreditDate:null,lastCompletedDate:null,sessionIds:[]}}
 export function trackKey(config={}){if(config.mode==='weekly')return 'weekly:day-'+clamp(config.planDay||1,1,7);if(config.mode==='cardio')return 'cardio:quiet';return config.mode==='custom'&&config.customIds?.length?'custom:'+config.customIds.join('|'):normalizeRegions(config.regions).join('+')+':routine-'+clamp(config.variant||1,1,3)}
 export function createPlan(config={}){
+  const available=EXERCISES.filter(e=>hasExercisePreview(e.id));
   const regions=normalizeRegions(config.regions),variant=clamp(config.variant||1,1,3),level=Math.floor(clamp(config.level,0,12));
   let selected=[];
-  if(config.mode==='custom')selected=(config.customIds||[]).map(id=>EXERCISES.find(e=>e.id===id)).filter(Boolean).filter((e,i,a)=>a.findIndex(x=>x.id===e.id)===i).slice(0,10);
+  if(config.mode==='custom')selected=(config.customIds||[]).map(id=>available.find(e=>e.id===id)).filter(Boolean).filter((e,i,a)=>a.findIndex(x=>x.id===e.id)===i).slice(0,10);
   if(!selected.length){
     const targets=regions.includes('full')?['legs','chest','back','shoulders','biceps','lowerback']:regions;
     // One exercise per region first, then fill with relevant movements.
-    for(const r of targets){const pool=EXERCISES.filter(e=>e.kind!=='cardio'&&e.groups.includes(r));const order=[...pool.slice(variant-1),...pool.slice(0,variant-1)];const e=order.find(e=>!selected.includes(e));if(e)selected.push(e)}
-    const pool=EXERCISES.filter(e=>e.kind!=='cardio'&&(regions.includes('full')||regions.some(r=>e.groups.includes(r))));
+    for(const r of targets){const pool=available.filter(e=>e.kind!=='cardio'&&e.groups.includes(r));const order=[...pool.slice(variant-1),...pool.slice(0,variant-1)];const e=order.find(e=>!selected.includes(e));if(e)selected.push(e)}
+    const pool=available.filter(e=>e.kind!=='cardio'&&(regions.includes('full')||regions.some(r=>e.groups.includes(r))));
     const order=[...pool.slice(variant-1),...pool.slice(0,variant-1)];
     const count=regions.includes('full')?6:Math.max(3,Math.min(7,regions.length*2));
     for(const e of order)if(selected.length<count&&!selected.includes(e))selected.push(e);
@@ -83,7 +99,8 @@ export function recordCompletion(track,result){
 export function migrateWorkout(state){
   const old=state.workoutConfig||{};
   const ids=(old.customIds||old.customRoutine?.map(e=>e.id)||[]).filter(id=>EXERCISES.some(e=>e.id===id));
-  state.workoutConfig={...old,schema:3,planDay:clamp(old.planDay||1,1,7),regions:normalizeRegions(old.regions),variant:clamp(old.variant||1,1,3),mode:old.schema>=3&&['weekly','cardio','auto','custom'].includes(old.mode)?old.mode:'weekly',customIds:[...new Set(ids)]};
+  state.workoutConfig={...old,schema:4,presetId:typeof old.presetId==='string'?old.presetId:'user-week',doseMode:old.doseMode==='goal'?'goal':'fit',targetMinutes:clamp(old.targetMinutes||30,10,90),sundayMinutes:clamp(old.sundayMinutes||35,30,40),bridgeVariant:old.bridgeVariant==='glute'?'glute':'reverse',planDay:clamp(old.planDay||1,1,7),regions:normalizeRegions(old.regions),variant:clamp(old.variant||1,1,3),mode:old.schema>=4&&['preset','weekly','cardio','auto','custom'].includes(old.mode)?old.mode:'preset',customIds:[...new Set(ids)]};
+  state.savedPresets=Array.isArray(state.savedPresets)?state.savedPresets.slice(0,30):[];
   state.trainingTracks=state.trainingTracks&&typeof state.trainingTracks==='object'?state.trainingTracks:{};
   return state;
 }

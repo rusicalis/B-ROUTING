@@ -1,3 +1,4 @@
+import {hasExercisePreview} from './exercise-media-data.mjs';
 import {EXERCISES,REGIONS} from './workout-engine.mjs';
 export const PROGRAM_TARGETS=REGIONS.filter(r=>r.id!=='full');
 export const WEEKLY_SCHEDULE=[
@@ -17,5 +18,5 @@ export function createWeeklyPlan(day=1,level=0){
  const seconds=estimateSeconds(exercises);
  return {kind:'weekly',key:'weekly:day-'+schedule.day,title:schedule.name+'요일 · '+schedule.title,day:schedule.day,targets:schedule.targets,regions:schedule.targets,level:safeLevel,exercises,estimatedSeconds:seconds,estimatedMinutes:Math.round(seconds/60*10)/10,mainOnly:true};
 }
-export function createCardioPlan(level=0){const safeLevel=Math.max(0,Math.min(12,Math.floor(Number(level)||0))),exercises=['quiet-march','step-jack','shadow-punch','side-step','standing-knee'].map(id=>({...EXERCISES.find(e=>e.id===id),sets:4,workSeconds:50+Math.min(10,safeLevel),reps:0,rest:15,cycleSeconds:id==='shadow-punch'?1.2:id==='quiet-march'?1.6:2,level:safeLevel})),seconds=estimateSeconds(exercises);return {kind:'cardio',key:'cardio:quiet',title:'체지방 관리 · 조용한 유산소',targets:[],regions:['full'],exercises,level:safeLevel,estimatedSeconds:seconds,estimatedMinutes:Math.round(seconds/60*10)/10,circuit:true,mainOnly:true}}
+export function createCardioPlan(level=0){const safeLevel=Math.max(0,Math.min(12,Math.floor(Number(level)||0))),exercises=['quiet-march','step-jack','shadow-punch','side-step','standing-knee'].filter(hasExercisePreview).map(id=>({...EXERCISES.find(e=>e.id===id),sets:4,workSeconds:50+Math.min(10,safeLevel),reps:0,rest:15,cycleSeconds:id==='shadow-punch'?1.2:id==='quiet-march'?1.6:2,level:safeLevel})),seconds=estimateSeconds(exercises);return {kind:'cardio',key:'cardio:quiet',title:'체지방 관리 · 조용한 유산소',targets:[],regions:['full'],exercises,level:safeLevel,estimatedSeconds:seconds,estimatedMinutes:Math.round(seconds/60*10)/10,circuit:true,mainOnly:true}}
 export function seoulWeekday(date=new Date()){return {Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:7}[new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',weekday:'short'}).format(date)]}

@@ -4,7 +4,7 @@ import * as W from '../workout-engine.mjs';
 
 test('all exercises use bodyweight, one 12kg kettlebell or the 60cm straight band',()=>{
   assert.ok(W.EXERCISES.length>=28);
-  for(const e of W.EXERCISES){assert.ok(['bodyweight','kettlebell','band'].includes(e.equipment));assert.ok(e.cues.length>=3);assert.ok(e.animation);assert.equal(e.jumping,false);if(e.equipment==='kettlebell'){assert.equal(e.weight,12);assert.equal(e.count,1)}if(e.equipment==='band'){assert.equal(e.bandLength,60);assert.equal(e.bandType,'straight');assert.equal(e.requiresAnchor,false)}}
+  for(const e of W.EXERCISES){assert.ok(['bodyweight','kettlebell','band','chair'].includes(e.equipment));assert.ok(e.cues.length>=3);assert.ok(e.animation);assert.equal(e.jumping,false);if(e.equipment==='kettlebell'){assert.equal(e.weight,12);assert.equal(e.count,1)}if(e.equipment==='band'){assert.equal(e.bandLength,60);assert.equal(e.bandType,'straight');assert.equal(e.requiresAnchor,false)}}
 });
 test('every region offers varied relevant exercises and distinct routine variants',()=>{
   for(const region of W.REGIONS){

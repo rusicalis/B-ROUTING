@@ -7,7 +7,8 @@ import {guideTiming} from '../guide-timing.mjs';
 
 test('each exercise has an illustrated guide and all bundled frames exist',async()=>{
  assert.equal(EXERCISE_MEDIA.length,EXERCISES.length);assert.equal(new Set(EXERCISE_MEDIA.map(m=>m.id)).size,EXERCISES.length);
- for(const e of EXERCISES){const media=getExerciseMedia(e.id);assert.ok(media,e.id);assert.ok(['gif','repdb','openart','diagram'].includes(media.provider));if(media.provider==='gif')assert.match(media.url,/^https:\/\/raw\.githubusercontent\.com\/hasaneyldrm\/exercises-dataset\/main\/videos\/.*\.gif$/);else assert.equal(media.frames.length,2)}
+ for(const e of EXERCISES){const media=getExerciseMedia(e.id);assert.ok(media,e.id);assert.ok(['gif','unavailable'].includes(media.provider));assert.equal(media.frames.length,0);if(media.provider==='gif'){const url=new URL(media.url);assert.ok(url.hostname==='raw.githubusercontent.com'||url.hostname==='wsrv.nl');assert.ok(media.source.includes('Gym visual'))}else assert.ok(media.note.length>20)}
+
  for(const path of LOCAL_MEDIA_ASSETS)assert.ok((await fs.stat(new URL('../'+path,import.meta.url))).size>150,path);
 });
 test('working illustrations follow the set clock, reverse side exactly once and stop at completion',()=>{
