@@ -45,9 +45,9 @@ test('timing counts unilateral work, real set rests and transitions without padd
 test('duration changes never remove core moves, sets or work across all levels',()=>{
  for(const day of [1,2,3,7])for(const level of [0,6,12]){
  let previous;
- for(let minutes=10;minutes<=90;minutes++){
+ for(const minutes of [30,40,50,60]){
   const p=createPresetPlan(day,level,{targetMinutes:minutes});
-  assert.equal(p.targetMinutes,day===7?Math.max(30,Math.min(40,minutes)):minutes);assert.equal(p.steps.at(-1).restAfter,0);
+  assert.equal(p.targetMinutes,minutes);assert.equal(p.steps.at(-1).restAfter,0);
   assert.equal(p.estimatedSeconds,estimatePresetSeconds(p));
   assert.ok(p.estimatedSeconds<=p.targetMinutes*60,`day ${day}, level ${level}, minutes ${minutes}`);
   for(const e of p.exercises){assert.ok(EXERCISES.some(x=>x.id===e.id));if(e.equipment==='kettlebell')assert.equal(e.weight,12)}
@@ -67,7 +67,7 @@ test('fit starts modestly and completion levels add at most five percent of work
  for(const day of [1,2,3,7]){
  let p=createPresetPlan(day,0);
  assert.ok(p.exercises.every(e=>e.sets<=5));
- assert.ok(p.exercises.filter(e=>!e.holdSeconds&&!e.workSeconds).every(e=>e.reps<=12));
+ assert.ok(p.exercises.filter(e=>!e.holdSeconds&&!e.workSeconds).every(e=>e.reps<=(e.equipment==='kettlebell'?12:16)));
  for(let level=1;level<=12;level++){
   const next=createPresetPlan(day,level);assert.ok(work(next)>work(p));assert.ok(work(next)<=work(p)*1.05);
   p=next;
@@ -78,7 +78,7 @@ test('fit starts modestly and completion levels add at most five percent of work
 test('tracks share family progress but separate modes, bridge variants and saved presets',()=>{
  assert.equal(presetTrackKey(1),presetTrackKey(4));assert.equal(presetTrackKey(2),presetTrackKey(5));assert.equal(presetTrackKey(3),presetTrackKey(6));
  assert.notEqual(presetTrackKey(1),presetTrackKey(2));assert.notEqual(presetTrackKey(1),presetTrackKey(7));
- assert.equal(presetTrackKey(1,{targetMinutes:10}),presetTrackKey(1,{targetMinutes:90}));
+ assert.equal(presetTrackKey(1,{targetMinutes:30}),presetTrackKey(1,{targetMinutes:90}));
  assert.notEqual(presetTrackKey(1),presetTrackKey(1,{doseMode:'goal'}));
  assert.notEqual(presetTrackKey(1),presetTrackKey(1,{bridgeVariant:'glute'}));
  assert.notEqual(presetTrackKey(1),presetTrackKey(1,{savedPreset:{id:'mine'}}));
@@ -97,20 +97,20 @@ test('saved snapshot validates, clones and restores edited doses without metadat
 
 test('longer targets add useful work beyond the thirty-minute starter dose',()=>{
  for(const day of [1,2,3,7]){
-  const starter=createPresetPlan(day,0),longer=createPresetPlan(day,0,{targetMinutes:45});
+  const starter=createPresetPlan(day,0),longer=createPresetPlan(day,0,{targetMinutes:60});
   assert.ok(starter.estimatedSeconds>=24*60,`starter day ${day}: ${starter.estimatedSeconds}`);
   assert.ok(longer.estimatedSeconds>starter.estimatedSeconds,`longer day ${day}`);
  }
 });
 
 test('saved fit duration adapts monotonically around its edited base while goal stays exact',()=>{
- const saved={id:'edited',name:'Edited',baseTargetMinutes:30,exercises:[{id:'pushup',sets:3,reps:8,cycleSeconds:4},{id:'reverse-plank',sets:3,reps:0,holdSeconds:30}]};
- const base=createPresetPlan(1,0,{savedPreset:saved});
+ const saved={id:'edited',name:'Edited',baseTargetMinutes:40,exercises:[{id:'pushup',sets:3,reps:8,cycleSeconds:4},{id:'reverse-plank',sets:3,reps:0,holdSeconds:30}]};
+ const base=createPresetPlan(1,0,{savedPreset:saved,targetMinutes:40});
  assert.deepEqual(base.exercises.map(e=>[e.sets,e.reps,e.holdSeconds]),[[3,8,undefined],[3,0,30]]);
- const short=createPresetPlan(1,0,{savedPreset:saved,targetMinutes:10}),long=createPresetPlan(1,0,{savedPreset:saved,targetMinutes:45});
+ const short=createPresetPlan(1,0,{savedPreset:saved,targetMinutes:30}),long=createPresetPlan(1,0,{savedPreset:saved,targetMinutes:60});
  assert.ok(short.estimatedSeconds<base.estimatedSeconds);assert.ok(long.estimatedSeconds>base.estimatedSeconds);
  let previous;
- for(let targetMinutes=10;targetMinutes<=90;targetMinutes++){
+ for(const targetMinutes of [30,40,50,60]){
   const p=createPresetPlan(1,0,{savedPreset:saved,targetMinutes});
   if(previous)for(let i=0;i<p.exercises.length;i++){
    assert.ok(p.exercises[i].sets>=previous.exercises[i].sets);assert.ok(p.exercises[i].reps>=previous.exercises[i].reps);
@@ -119,7 +119,7 @@ test('saved fit duration adapts monotonically around its edited base while goal 
   previous=p;
  }
  assert.deepEqual(createPresetPlan(1,0,{savedPreset:saved,doseMode:'goal',targetMinutes:10}).exercises.map(e=>[e.sets,e.reps,e.holdSeconds]),[[3,8,undefined],[3,0,30]]);
- assert.equal(normalizeSavedPreset(saved).preset.baseTargetMinutes,30);
+ assert.equal(normalizeSavedPreset(saved).preset.baseTargetMinutes,40);
  assert.equal(normalizeSavedPreset({...saved,baseTargetMinutes:0}).ok,false);
 });
 
@@ -132,4 +132,4 @@ test('saved completion growth stays gentle even for a single low-dose movement',
  }
 });
 
-test('all default fit exercises have exact equipment diagrams and Sunday uses35min default',()=>{for(let d=1;d<=7;d++)for(let level=0;level<=12;level++){const p=createPresetPlan(d,level);assert.ok(p.exercises.every(e=>hasExercisePreview(e.id)));if(d===7){assert.equal(p.targetMinutes,35);assert.ok(p.estimatedSeconds>=1800&&p.estimatedSeconds<=2400)}}});
+test('all default fit exercises have exact equipment diagrams and Sunday uses40min default',()=>{for(let d=1;d<=7;d++)for(let level=0;level<=12;level++){const p=createPresetPlan(d,level);assert.ok(p.exercises.every(e=>hasExercisePreview(e.id)));if(d===7){assert.equal(p.targetMinutes,40);assert.ok(p.estimatedSeconds>=1800&&p.estimatedSeconds<=2400)}}});

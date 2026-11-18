@@ -1,5 +1,5 @@
-const CACHE='burning-routine-v400';
-const CORE=["./","./index.html","./style.css","./workout.css","./iphone.css","./program.css","./presets.css","./illustrated-guide.css","./illustrated-guide.mjs","./guide-timing.mjs","./exercise-media-data.mjs","./vendor/omggif.mjs","./app.js","./workout-engine.mjs","./weekly-program.mjs","./preset-program.mjs","./screen-awake.mjs","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png"];
+const CACHE='burning-routine-v410';
+const CORE=['./controls.css','./session-progress.mjs','./duration-fit.mjs','./duration-catalog.mjs','./extra-exercises.mjs',"./","./index.html","./style.css","./workout.css","./iphone.css","./program.css","./presets.css","./illustrated-guide.css","./illustrated-guide.mjs","./guide-timing.mjs","./exercise-media-data.mjs","./vendor/omggif.mjs","./app.js","./workout-engine.mjs","./weekly-program.mjs","./preset-program.mjs","./screen-awake.mjs","./manifest.webmanifest","./icon-192.png","./icon-512.png","./apple-touch-icon.png"];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('burning-routine-')&&k!==CACHE&&k!=='burning-routine-guide-media-v310').map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{

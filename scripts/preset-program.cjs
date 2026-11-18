@@ -28,17 +28,17 @@ function wakeMock(mode='supported'){
   await context.addInitScript(wakeMock,'supported');
   const page=await context.newPage();watch(page);
   const stored=()=>page.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
-  const ready=async()=>{await page.waitForSelector('[data-program-day="1"]',{state:'attached'});await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)||'{}').workoutConfig?.schema===4,key)};
-  const setting=async(id,value)=>{await page.locator('#'+id).fill(String(value));await page.locator('#'+id).press('Tab');await page.waitForFunction(({key,id,value})=>JSON.parse(localStorage.getItem(key)).workoutConfig[id]===value,{key,id,value})};
+  const ready=async()=>{await page.waitForSelector('[data-program-day="1"]',{state:'attached'});await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)||'{}').workoutConfig?.schema===5,key)};
+  const setting=async(id,value)=>{if(id==='targetMinutes'){await page.locator('[name=workoutMinutes][value="'+value+'"]').check()}else{await page.locator('#'+id).fill(String(value));await page.locator('#'+id).press('Tab')}await page.waitForFunction(({key,id,value})=>JSON.parse(localStorage.getItem(key)).workoutConfig[id]===value,{key,id,value})};
   const dose=()=>page.locator('[data-dose-index]').evaluateAll(inputs=>inputs.map(input=>({index:Number(input.dataset.doseIndex),field:input.dataset.doseField,value:Number(input.value)})));
-  await page.goto(origin+'/?view=workout');await ready();
+  await page.goto(origin+'/?view=workout');await ready();if(await page.locator('#editRoutine').isVisible())await page.locator('#editRoutine').click();
   let state=await stored();assert.equal(state.workoutConfig.mode,'preset');assert.equal(state.workoutConfig.bridgeVariant,'reverse');assert.equal(state.workoutConfig.doseMode,'fit');assert.equal(state.workoutConfig.targetMinutes,30);
   assert.equal(await page.locator('#bridgeVariant').inputValue(),'reverse');assert.equal(await page.locator('#doseMode').inputValue(),'fit');
   await page.locator('[data-program-day="1"]').click();const starter=await dose();
-  await setting('targetMinutes',45);const longer=await dose();assert.ok(longer.some((row,i)=>row.value>starter[i]?.value));
+  await setting('targetMinutes',40);const longer=await dose();assert.ok(longer.some((row,i)=>row.value>starter[i]?.value));
   for(let i=0;i<starter.length;i++)assert.ok(longer[i].value>=starter[i].value,'longer target must retain every existing dose');
   await setting('targetMinutes',30);
-  await page.locator('.presetEditor summary').click();
+  if(!await page.locator('.advancedRoutine').evaluate(el=>el.open))await page.locator('.advancedRoutine>summary').click();await page.locator('.presetEditor summary').click();
   await page.locator('[data-dose-index="0"][data-dose-field="sets"]').fill('2');
   await page.locator('[data-dose-index="0"][data-dose-field="reps"]').fill('7');
   await page.locator('#presetName').fill('Browser edited dose');await page.locator('#savePreset').click();
@@ -50,8 +50,8 @@ function wakeMock(mode='supported'){
   await page.locator('#presetSelect').selectOption('user-week');await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).workoutConfig.presetId==='user-week',key);
   await page.locator('#presetSelect').selectOption(savedId);await page.waitForFunction(({key,savedId})=>JSON.parse(localStorage.getItem(key)).workoutConfig.presetId===savedId,{key,savedId});
   assert.equal(await page.locator('[data-dose-index="0"][data-dose-field="sets"]').inputValue(),'2');
-  const edited=await dose();await setting('targetMinutes',45);assert.ok((await dose()).some((row,i)=>row.value>edited[i]?.value));await setting('targetMinutes',30);
-  await page.locator('.presetEditor summary').click();await page.locator('#deletePreset').click();await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).savedPresets.length===0,key);assert.equal(await page.locator('#presetSelect').inputValue(),'user-week');
+  const edited=await dose();await setting('targetMinutes',40);assert.ok((await dose()).some((row,i)=>row.value>edited[i]?.value));await setting('targetMinutes',30);
+  if(!await page.locator('.advancedRoutine').evaluate(el=>el.open))await page.locator('.advancedRoutine>summary').click();await page.locator('.presetEditor summary').click();await page.locator('#deletePreset').click();await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).savedPresets.length===0,key);assert.equal(await page.locator('#presetSelect').inputValue(),'user-week');
   await page.locator('#doseMode').selectOption('goal');await page.waitForFunction(k=>JSON.parse(localStorage.getItem(k)).workoutConfig.doseMode==='goal',key);
   assert.match(await page.locator('#programSummary').innerText(),/41\.4/);assert.match(await page.locator('#programSummary').innerText(),/목표 시간보다/);
   assert.equal(await page.locator('[data-dose-index="0"][data-dose-field="sets"]').inputValue(),'10');assert.equal(await page.locator('[data-dose-index="0"][data-dose-field="reps"]').inputValue(),'10');
@@ -99,7 +99,7 @@ function wakeMock(mode='supported'){
   const legacy=await browser.newContext({timezoneId:'Asia/Seoul'});await legacy.addInitScript(wakeMock,'unsupported');const lp=await legacy.newPage();watch(lp);
   await lp.addInitScript(({key})=>{if(sessionStorage.getItem('preset-regression-seeded'))return;sessionStorage.setItem('preset-regression-seeded','yes');localStorage.setItem(key,JSON.stringify({settings:{theme:'rose'},tasks:[{id:'keep-task',title:'Keep my task',start:'07:00',end:'08:00',days:[0,1,2,3,4,5,6],category:'work',notify:'off'}],history:[{type:'task',title:'Keep history',date:'2026-11-01'}],completions:{'2026-11-01':{'keep-task':true}},trainingTracks:{'weekly:day-1':{level:3,completed:4,lastCreditDate:'2026-11-01'}},workoutConfig:{schema:3,mode:'weekly',planDay:1}}))},{key});
   await lp.goto(origin+'/?view=workout');await lp.waitForSelector('[data-program-day="1"]',{state:'attached'});const migrated=await lp.evaluate(k=>JSON.parse(localStorage.getItem(k)),key);
-  assert.equal(migrated.workoutConfig.schema,4);assert.equal(migrated.workoutConfig.mode,'preset');assert.equal(migrated.settings.theme,'rose');assert.equal(migrated.tasks[0].id,'keep-task');assert.equal(migrated.history[0].title,'Keep history');assert.equal(migrated.completions['2026-11-01']['keep-task'],true);assert.equal(migrated.trainingTracks['weekly:day-1'].level,3);assert.equal(migrated.trainingTracks['weekly:day-1'].completed,4);
+  assert.equal(migrated.workoutConfig.schema,5);assert.equal(migrated.workoutConfig.mode,'preset');assert.equal(migrated.settings.theme,'rose');assert.equal(migrated.tasks[0].id,'keep-task');assert.equal(migrated.history[0].title,'Keep history');assert.equal(migrated.completions['2026-11-01']['keep-task'],true);assert.equal(migrated.trainingTracks['weekly:day-1'].level,3);assert.equal(migrated.trainingTracks['weekly:day-1'].completed,4);
   await legacy.close();assert.deepEqual(errors,[]);console.log('PASS legacy tasks/theme/history/completions/tracks preserved; no browser page errors');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

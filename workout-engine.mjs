@@ -1,3 +1,4 @@
+import {EXTRA_EXERCISES} from './extra-exercises.mjs';
 import {hasExercisePreview} from './exercise-media-data.mjs';
 // Pure catalogue and progression rules. No network, DOM or storage dependencies.
 export const REGIONS=[{id:'full',name:'전신',en:'FULL BODY'},{id:'chest',name:'가슴',en:'CHEST'},{id:'shoulders',name:'어깨',en:'SHOULDERS'},{id:'biceps',name:'이두',en:'BICEPS'},{id:'triceps',name:'삼두',en:'TRICEPS'},{id:'back',name:'등',en:'BACK'},{id:'lowerback',name:'허리',en:'LOWER BACK'},{id:'legs',name:'다리',en:'LEGS'}];
@@ -57,6 +58,7 @@ EXERCISES.push(
  ex('kb-concentration-curl','케틀벨 원암 컨센트레이션 컬','biceps','kettlebell','curl',['흔들리지 않는 좌판에 앉아 다리를 벌리고 한 손으로 케틀벨을 잡습니다.','작업 팔의 위팔을 같은 쪽 허벅지 안쪽에 대고 팔꿈치를 접어 올립니다.','몸통을 흔들지 않고 천천히 내린 뒤 양쪽을 진행합니다.'],{eachSide:true,reps:6,requiresStableChair:true}),
  ex('kb-curl-hold','케틀벨 컨센트레이션 컬 홀드','biceps','kettlebell','curl',['안정된 좌판에 앉아 한쪽 위팔을 허벅지 안쪽에 댑니다.','케틀벨을 잡고 팔꿈치를 접은 자세를 유지합니다.','손목을 꺾거나 몸통을 흔들지 말고 양쪽을 진행합니다.'],{eachSide:true,reps:0,holdSeconds:15,requiresStableChair:true})
 );
+EXERCISES.push(...EXTRA_EXERCISES);
 const details={biceps:['kb-row','kb-curl'],triceps:['knee-pushup','pushup','kb-floor-press','close-knee','close-pushup','pike-pushup'],lowerback:['kb-deadlift','good-morning','bird-dog'],legs:['bridge','single-bridge']};
 for(const e of EXERCISES){e.groups=e.groups.filter(g=>g!=='arms');e.jumping=false;for(const [group,ids]of Object.entries(details))if(ids.includes(e.id)&&!e.groups.includes(group))e.groups.push(group)}
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(v))?Number(v):min));
@@ -99,7 +101,7 @@ export function recordCompletion(track,result){
 export function migrateWorkout(state){
   const old=state.workoutConfig||{};
   const ids=(old.customIds||old.customRoutine?.map(e=>e.id)||[]).filter(id=>EXERCISES.some(e=>e.id===id));
-  state.workoutConfig={...old,schema:4,presetId:typeof old.presetId==='string'?old.presetId:'user-week',doseMode:old.doseMode==='goal'?'goal':'fit',targetMinutes:clamp(old.targetMinutes||30,10,90),sundayMinutes:clamp(old.sundayMinutes||35,30,40),bridgeVariant:old.bridgeVariant==='glute'?'glute':'reverse',planDay:clamp(old.planDay||1,1,7),regions:normalizeRegions(old.regions),variant:clamp(old.variant||1,1,3),mode:old.schema>=4&&['preset','weekly','cardio','auto','custom'].includes(old.mode)?old.mode:'preset',customIds:[...new Set(ids)]};
+  state.workoutConfig={...old,schema:5,presetId:typeof old.presetId==='string'?old.presetId:'user-week',doseMode:old.schema>=5&&old.doseMode==='goal'?'goal':'fit',targetMinutes:[30,40,50,60].includes(old.targetMinutes)?old.targetMinutes:30,sundayMinutes:[30,40,50,60].includes(old.sundayMinutes)?old.sundayMinutes:40,bridgeVariant:old.bridgeVariant==='glute'?'glute':'reverse',planDay:clamp(old.planDay||1,1,7),regions:normalizeRegions(old.regions),variant:clamp(old.variant||1,1,3),mode:old.schema>=4&&['preset','weekly','cardio','auto','custom'].includes(old.mode)?old.mode:'preset',customIds:[...new Set(ids)]};
   state.savedPresets=Array.isArray(state.savedPresets)?state.savedPresets.slice(0,30):[];
   state.trainingTracks=state.trainingTracks&&typeof state.trainingTracks==='object'?state.trainingTracks:{};
   return state;

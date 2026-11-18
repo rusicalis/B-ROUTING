@@ -1,3 +1,4 @@
+import {EXTRA_MEDIA} from './extra-exercises.mjs';
 // Exact equipment anatomical diagram references; no remote media is bundled.
 export const EXERCISE_MEDIA=[
   {
@@ -475,6 +476,7 @@ export const EXERCISE_MEDIA=[
     "holdPhase": 0.5
   }
 ];
+EXERCISE_MEDIA.push(...EXTRA_MEDIA);
 export const LOCAL_MEDIA_ASSETS=[];
 export const getExerciseMedia=id=>EXERCISE_MEDIA.find(e=>e.id===id)||null;
 export const hasExercisePreview=id=>getExerciseMedia(id)?.provider==='gif';

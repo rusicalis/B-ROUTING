@@ -9,6 +9,6 @@ test('new requested movements have accurate equipment and timed doses',()=>{
 });
 test('schema4 migrates old weekly config without losing records and defaults to reverse plank fit30',()=>{
  const s={workoutConfig:{schema:3,mode:'weekly',planDay:4},tasks:[{id:'x'}],history:[{type:'task'}],trainingTracks:{old:{level:3}}};migrateWorkout(s);
- assert.equal(s.workoutConfig.mode,'preset');assert.equal(s.workoutConfig.schema,4);assert.equal(s.workoutConfig.bridgeVariant,'reverse');assert.equal(s.workoutConfig.targetMinutes,30);assert.equal(s.workoutConfig.doseMode,'fit');assert.equal(s.history.length,1);assert.equal(s.trainingTracks.old.level,3);
+ assert.equal(s.workoutConfig.mode,'preset');assert.equal(s.workoutConfig.schema,5);assert.equal(s.workoutConfig.bridgeVariant,'reverse');assert.equal(s.workoutConfig.targetMinutes,30);assert.equal(s.workoutConfig.doseMode,'fit');assert.equal(s.history.length,1);assert.equal(s.trainingTracks.old.level,3);
  s.workoutConfig.mode='auto';migrateWorkout(s);assert.equal(s.workoutConfig.mode,'auto');
 });

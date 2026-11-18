@@ -45,7 +45,7 @@ export class IllustratedGuide{
   const frozen=['rest','paused','feedback','done'].includes(context.phase);this.badge.textContent=context.phase==='rest'?'휴식 중 · 그림 시범 정지':context.phase==='paused'?'일시정지':context.phase==='done'||context.phase==='feedback'?'운동 완료':state.label;
   this.figure.classList.toggle('guideMirrored',!!state.side);this.figure.classList.toggle('guideFrozen',frozen);
   document.querySelectorAll('button[data-guide-phase]').forEach(button=>{const selected=Number(button.dataset.guidePhase)===state.step;button.classList.toggle('active',selected);button.setAttribute('aria-pressed',String(selected))});
-  if(context.phase==='ready'){const label=document.querySelector('#phaseLabel');if(label)label.textContent=state.label}
+  if(context.phase==='ready'&&!context.restPreview){const label=document.querySelector('#phaseLabel');if(label)label.textContent=state.label}
   if(this.images)this.images.forEach((img,i)=>img.hidden=i!==state.imageIndex);
   if(this.gif){const g=this.gif;let target=0,elapsed=0;const visualPhase=this.exercise.holdSeconds&&context.phase==='work'?(this.media.holdPhase??.5):(state.phase+(this.media.offset||0))%1;for(let i=0;i<g.frames.length;i++){elapsed+=Math.max(.02,(g.frames[i].delay||10)/100);if(elapsed>visualPhase*g.duration){target=i;break}}this.drawGifFrame(target)}
  }

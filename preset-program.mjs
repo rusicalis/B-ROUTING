@@ -1,3 +1,4 @@
+import {createDurationPlan} from './duration-catalog.mjs';
 // Pure preset planning. All timing is derived from the same ordered steps used by sessions.
 import {hasExercisePreview} from './exercise-media-data.mjs';
 import {EXERCISES} from './workout-engine.mjs';
@@ -59,70 +60,14 @@ function goalTemplate(day,options){
  return {exercises:[dose('kb-row',4,5),dose('pushup',4,10),dose('squat',4,15),dose('abs-crunch',5,0,{workSeconds:60}),dose(bridge,5,0,{holdSeconds:60})],blocks:[{kind:'circuit',exerciseIndices:[0,1,2],rounds:4},{kind:'sets',exerciseIndices:[3,4]}]};
 }
 
-// These are conservative initial-dose ceilings, not a reason to manufacture longer sessions.
-// A larger target consumes a deterministic prefix of small dose changes, so existing work never shrinks.
 export const PREVIEW_SUBSTITUTIONS={'kb-lying-triceps':'bodyweight-triceps','kb-curl':'kb-concentration-curl','band-lateral-raise':'prone-y','band-w':'prone-y','prone-w':'scapular-pushup'};
-function fitTemplate(day,options,budget){
+function adaptiveTemplate(day,options,minutes){
  const f=family(day),bridge=bridgeId(options);
- const requestedSpecs=f==='A'?[['pushup',4,8],['pike-pushup',3,5],['kb-lying-triceps',3,6],['chair-dip',3,6],[bridge,4,30]]:
-  f==='B'?[['kb-curl',3,8],['kb-shoulder-press',3,6],['kb-deadlift',3,10],['abs-crunch',4,30],['band-lateral-raise',3,8]]:
-  f==='C'?[['kb-row',3,8],['squat',4,12],[bridge,4,30]]:
-  [['kb-row',3,5],['pushup',3,6],['squat',3,10],['abs-crunch',3,30],[bridge,3,30]];
- const specs=requestedSpecs.map(([id,...dose])=>[PREVIEW_SUBSTITUTIONS[id]||id,...dose]);
- const exercises=specs.map(([id])=>{
-  const timed=id===bridge||id==='abs-crunch';
-  return dose(id,1,timed?0:id==='pike-pushup'?3:4,timed?{[id==='abs-crunch'?'workSeconds':'holdSeconds']:20}:{});
- });
- const plan={exercises};
- if(f==='sunday')plan.blocks=[{kind:'circuit',exerciseIndices:[0,1,2],rounds:1},{kind:'sets',exerciseIndices:[3,4]}];
- const change=(index,field,value)=>{
-  const previous=exercises[index][field],rounds=plan.blocks?.[0].rounds;
-  exercises[index][field]=value;
-  if(f==='sunday'&&index<3&&field==='sets'){
-   for(let i=0;i<3;i++)exercises[i].sets=value;
-   plan.blocks[0].rounds=value;
-  }
-  if(estimatePresetSeconds(plan)>budget){
-   exercises[index][field]=previous;
-   if(f==='sunday'&&index<3&&field==='sets'){for(let i=0;i<3;i++)exercises[i].sets=rounds;plan.blocks[0].rounds=rounds}
-   return false;
-  }
-  return true;
- };
- // First establish comfortable repetitions, then add whole sets gradually.
- for(let pass=0;pass<12;pass++)for(let i=0;i<specs.length;i++){
-  const e=exercises[i],field=e.holdSeconds?'holdSeconds':e.workSeconds?'workSeconds':'reps',target=specs[i][2];
-  if(e[field]<target&&!change(i,field,Math.min(target,e[field]+(field==='reps'?1:5))))return plan;
- }
- for(let set=2;set<=4;set++)for(let i=0;i<specs.length;i++){
-  if(f==='sunday'&&i>0&&i<3)continue;
-  if(specs[i][1]>=set&&!change(i,'sets',set))return plan;
- }
- const accessories=f==='A'?[['scapular-pushup',3,8],['band-w',3,8]]:
-  f==='B'?[['dead-bug',2,6],['prone-w',2,8]]:
-  f==='C'?[['calf-raise',3,12],['bird-dog',3,6],['prone-w',2,8]]:
-  [['plank',2,20],['prone-w',2,8]];
- for(const [requestedId,sets,reps]of accessories){
-  const id=PREVIEW_SUBSTITUTIONS[requestedId]||requestedId;
-  const e=dose(id,sets,id==='plank'?0:reps,id==='plank'?{holdSeconds:reps}:{});
-  exercises.push(e);
-  if(plan.blocks)plan.blocks.at(-1).exerciseIndices.push(exercises.length-1);
-  if(estimatePresetSeconds(plan)>budget){
-   exercises.pop();if(plan.blocks)plan.blocks.at(-1).exerciseIndices.pop();return plan;
-  }
- }
- // Longer sessions first add a few repetitions, then sets. All changes retain
- // the starter sequence and every already allocated dose, including accessories.
- for(let pass=0;pass<6;pass++)for(let i=0;i<exercises.length;i++){
-  const e=exercises[i],field=e.holdSeconds?'holdSeconds':e.workSeconds?'workSeconds':'reps';
-  const ceiling=field==='reps'?(e.id==='pike-pushup'||e.id==='chair-dip'?8:12):50;
-  if(e[field]<ceiling&&!change(i,field,Math.min(ceiling,e[field]+(field==='reps'?1:5))))return plan;
- }
- for(let set=2;set<=5;set++)for(let i=0;i<exercises.length;i++){
-  if(f==='sunday'&&i>0&&i<3)continue;
-  if(exercises[i].sets<set&&!change(i,'sets',set))return plan;
- }
- return plan;
+ const specs=f==='A'?[['pushup',3,8],['pike-pushup',2,5],['bodyweight-triceps',2,6],['chair-dip',2,6],[bridge,3,30]]:f==='B'?[['kb-concentration-curl',2,6],['kb-shoulder-press',2,5],['kb-deadlift',2,8],['abs-crunch',3,30],['prone-y',2,8]]:f==='C'?[['kb-row',3,8],['squat',3,12],[bridge,3,30]]:[['kb-row',2,5],['pushup',2,8],['squat',2,10],['abs-crunch',3,30],[bridge,3,30]];
+ const exercises=specs.map(([id,sets,reps])=>dose(id,sets,id===bridge||id==='abs-crunch'?0:reps,id===bridge?{holdSeconds:reps}:id==='abs-crunch'?{workSeconds:reps}:{}));
+ const base={exercises};if(f==='sunday')base.blocks=[{kind:'circuit',exerciseIndices:[0,1,2],rounds:2},{kind:'sets',exerciseIndices:[3,4]}];
+ const targets=f==='A'?['chest','shoulders','triceps']:f==='B'?['biceps','shoulders','legs','lowerback','core']:f==='C'?['back','biceps','legs','lowerback']:['back','chest','legs','core'];
+ return createDurationPlan(base,targets,minutes);
 }
 
 function fitSaved(saved,selected,targetMinutes){
@@ -210,9 +155,9 @@ export function normalizeSavedPreset(input){
 
 export function createPresetPlan(day=1,level=0,options={}){
  day=safeDay(day);level=Math.floor(clamp(level,0,12));
- const schedule=PRESET_SCHEDULE[day-1],targetMinutes=Math.round(day===7?clamp(options.targetMinutes??35,30,40,35):clamp(options.targetMinutes??30,10,90,30));
+ const schedule=PRESET_SCHEDULE[day-1],targetMinutes=[30,40,50,60].includes(Number(options.targetMinutes))?Number(options.targetMinutes):(day===7?40:30);
  const doseMode=options.doseMode==='goal'?'goal':'fit',bridgeVariant=options.bridgeVariant==='glute'?'glute':'reverse';
- const original=goalTemplate(day,{bridgeVariant}),notes=[];if(day===7)notes.push('일요일은 30~40분으로 제한합니다. 목표 서킷도 10→4라운드로 조정하고 복근·리버스 플랭크는 유지합니다.');
+ const original=goalTemplate(day,{bridgeVariant}),notes=[];if(day===7)notes.push('일요일 목표 서킷은 4라운드이며, 시간 맞춤에서는 선택한 시간에 맞춰 동작을 추가합니다.');
  let selected,saved;
  if(options.savedPreset){
   const result=normalizeSavedPreset(options.savedPreset);
@@ -220,7 +165,7 @@ export function createPresetPlan(day=1,level=0,options={}){
   saved=result.preset;
   selected={exercises:saved.exercises.map(e=>dose(e.id,e.sets,e.reps,e)),...(saved.blocks?{blocks:saved.blocks}:{} )};
   if(doseMode==='fit')selected=fitSaved(saved,selected,targetMinutes);
- }else selected=doseMode==='goal'?original:fitTemplate(day,{bridgeVariant},targetMinutes*60-60);
+ }else selected=doseMode==='goal'?original:adaptiveTemplate(day,{bridgeVariant},targetMinutes);
  // Keep a fixed sixty-second reserve at every level. This prevents progress from removing
  // sets at a duration boundary. Only one timed core movement gains one second each level.
  if(doseMode==='fit'&&level){
@@ -229,7 +174,7 @@ export function createPresetPlan(day=1,level=0,options={}){
   else if(selected.exercises.length){const e=selected.exercises[0];e.cycleSeconds=Math.round(e.cycleSeconds*(1+level*.01)*1000)/1000;notes.push('완료 단계마다 첫 동작의 제어 템포를 1%씩 천천히 진행합니다.');}
  }
  if(doseMode==='fit'&&!saved)notes.push('정확한 그림에 맞춰 누운 케틀벨 삼두→맨몸 삼두, 컬→원암 컨센트레이션 컬, 밴드 사이드 레이즈→프론 Y 레이즈로 대체합니다. 요청 동작은 원안 목표에 보존합니다.');
- if(doseMode==='fit')notes.push('일반인 시작량으로 조절했습니다. 남는 시간을 추가 휴식으로 채우지 않습니다.');
+ if(doseMode==='fit')notes.push('선택 시간에 맞춰 미리보기 가능한 새 운동을 먼저 추가하고, 더 추가할 동작이 없으면 횟수·세트로 조절합니다.');
  notes.push('세트 사이 30초 · 운동 전환 60초 · 한쪽 운동은 양쪽 시간 포함');
  if(family(day)==='A')notes.push('원래 목표에서 횟수가 없는 파이크와 삼두·딥스는 각각 6회로 산정했습니다.');
  if(family(day)==='B'||family(day)==='C')notes.push('원래 목표에서 세트·횟수가 없는 근력 동작은 3세트의 보수적인 반복 수로 산정했습니다.');
@@ -241,4 +186,3 @@ export function createPresetPlan(day=1,level=0,options={}){
  if(plan.overflow)notes.push('목표 시간보다 '+Math.ceil(plan.overflowSeconds/60)+'분 깁니다. 실제 예상 시간을 확인해 주세요.');
  return plan;
 }
-
