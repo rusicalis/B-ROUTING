@@ -1,0 +1,7 @@
+# BR application mark
+
+Generated with the built-in image_gen tool for BURNING ROUTINE on2026-11-18. The original generated PNG was copied into this project as br-master.png. icon-512.png, icon-192.png and apple-touch-icon.png are size exports of the same artwork, with no new visual content. The originals of the old mountain-style icon are replaced at the user's request.
+
+Prompt:
+
+Use case: logo-brand. Asset: production app icon for BURNING ROUTINE, a serious home strength training and daily routine app. Create ONE original bold typographic monogram using only the exact letters BR. It must be a clear, highly polished flat graphic legible as a tiny iPhone app icon, with the smart simplicity and typographic confidence of leading modern software brands, but do not copy any existing company symbol or logo. Square edge-to-edge solid near-black charcoal (#111318) background. A compact distinctive interlocked BR letterform in crisp warm white, with a single vivid performance-red (#ed3b2f) cut or stroke as a disciplined energy accent. The two letters must remain recognizable, balanced geometric proportions, generous18percent safe margin on every side, centered. No mountains, dumbbells, athletes, flames, gradients,3D, glow, shadows, texture, mockup, outer frame, small words, or extra lettering. Output the actual flat square icon artwork filling the canvas, not a device mockup. Opaque background.

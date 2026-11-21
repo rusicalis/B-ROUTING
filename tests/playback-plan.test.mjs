@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {samePlaybackPlan} from '../playback-action.mjs';
+const plan={kind:'preset',key:'family-A',day:1,level:0,targetMinutes:30,exercises:[{id:'pushup',sets:3,reps:8,cycleSeconds:4}],blocks:[{kind:'sets',exerciseIndices:[0]}]};
+test('image resumes only a matching displayed dose and duration',()=>{assert.equal(samePlaybackPlan(plan,structuredClone(plan)),true);assert.equal(samePlaybackPlan(plan,{...plan,targetMinutes:60}),false);assert.equal(samePlaybackPlan(plan,{...plan,exercises:[{...plan.exercises[0],reps:10}]}),false);assert.equal(samePlaybackPlan(plan,{...plan,day:4}),false);assert.equal(samePlaybackPlan(null,plan),false)});

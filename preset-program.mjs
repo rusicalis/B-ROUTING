@@ -1,3 +1,4 @@
+import {limitWorkIncrease} from './progression-dose.mjs';
 import {createDurationPlan} from './duration-catalog.mjs';
 // Pure preset planning. All timing is derived from the same ordered steps used by sessions.
 import {hasExercisePreview} from './exercise-media-data.mjs';
@@ -49,7 +50,7 @@ export function estimatePresetSeconds(plan){
  return Math.round(buildPresetSteps(plan).reduce((total,step)=>{
   const e=plan.exercises[step.exerciseIndex];
   return total+(e.holdSeconds||e.workSeconds||e.reps*(e.cycleSeconds||4))*(e.eachSide?2:1)+step.restAfter;
- },0));
+ },0)*1000)/1000;
 }
 
 function goalTemplate(day,options){
@@ -61,13 +62,13 @@ function goalTemplate(day,options){
 }
 
 export const PREVIEW_SUBSTITUTIONS={'kb-lying-triceps':'bodyweight-triceps','kb-curl':'kb-concentration-curl','band-lateral-raise':'prone-y','band-w':'prone-y','prone-w':'scapular-pushup'};
-function adaptiveTemplate(day,options,minutes){
+function adaptiveTemplate(day,options,minutes,level=0){
  const f=family(day),bridge=bridgeId(options);
  const specs=f==='A'?[['pushup',3,8],['pike-pushup',2,5],['bodyweight-triceps',2,6],['chair-dip',2,6],[bridge,3,30]]:f==='B'?[['kb-concentration-curl',2,6],['kb-shoulder-press',2,5],['kb-deadlift',2,8],['abs-crunch',3,30],['prone-y',2,8]]:f==='C'?[['kb-row',3,8],['squat',3,12],[bridge,3,30]]:[['kb-row',2,5],['pushup',2,8],['squat',2,10],['abs-crunch',3,30],[bridge,3,30]];
  const exercises=specs.map(([id,sets,reps])=>dose(id,sets,id===bridge||id==='abs-crunch'?0:reps,id===bridge?{holdSeconds:reps}:id==='abs-crunch'?{workSeconds:reps}:{}));
  const base={exercises};if(f==='sunday')base.blocks=[{kind:'circuit',exerciseIndices:[0,1,2],rounds:2},{kind:'sets',exerciseIndices:[3,4]}];
  const targets=f==='A'?['chest','shoulders','triceps']:f==='B'?['biceps','shoulders','legs','lowerback','core']:f==='C'?['back','biceps','legs','lowerback']:['back','chest','legs','core'];
- return createDurationPlan(base,targets,minutes);
+ return createDurationPlan(base,targets,minutes,level);
 }
 
 function fitSaved(saved,selected,targetMinutes){
@@ -165,7 +166,7 @@ export function createPresetPlan(day=1,level=0,options={}){
   saved=result.preset;
   selected={exercises:saved.exercises.map(e=>dose(e.id,e.sets,e.reps,e)),...(saved.blocks?{blocks:saved.blocks}:{} )};
   if(doseMode==='fit')selected=fitSaved(saved,selected,targetMinutes);
- }else selected=doseMode==='goal'?original:adaptiveTemplate(day,{bridgeVariant},targetMinutes);
+ }else selected=doseMode==='goal'?original:adaptiveTemplate(day,{bridgeVariant},targetMinutes,level);
  // Keep a fixed sixty-second reserve at every level. This prevents progress from removing
  // sets at a duration boundary. Only one timed core movement gains one second each level.
  if(doseMode==='fit'&&level){
@@ -174,7 +175,7 @@ export function createPresetPlan(day=1,level=0,options={}){
   else if(selected.exercises.length){const e=selected.exercises[0];e.cycleSeconds=Math.round(e.cycleSeconds*(1+level*.01)*1000)/1000;notes.push('완료 단계마다 첫 동작의 제어 템포를 1%씩 천천히 진행합니다.');}
  }
  if(doseMode==='fit'&&!saved)notes.push('정확한 그림에 맞춰 누운 케틀벨 삼두→맨몸 삼두, 컬→원암 컨센트레이션 컬, 밴드 사이드 레이즈→프론 Y 레이즈로 대체합니다. 요청 동작은 원안 목표에 보존합니다.');
- if(doseMode==='fit')notes.push('선택 시간에 맞춰 미리보기 가능한 새 운동을 먼저 추가하고, 더 추가할 동작이 없으면 횟수·세트로 조절합니다.');
+ if(doseMode==='fit')notes.push('기본 복합 동작과 부위별 균형을 우선하고, 여유 있게 완료한 기록이 쌓이면 난도를 단계적으로 높입니다. 신규 등록 여부는 우선하지 않습니다.');
  notes.push('세트 사이 30초 · 운동 전환 60초 · 한쪽 운동은 양쪽 시간 포함');
  if(family(day)==='A')notes.push('원래 목표에서 횟수가 없는 파이크와 삼두·딥스는 각각 6회로 산정했습니다.');
  if(family(day)==='B'||family(day)==='C')notes.push('원래 목표에서 세트·횟수가 없는 근력 동작은 3세트의 보수적인 반복 수로 산정했습니다.');
@@ -184,5 +185,5 @@ export function createPresetPlan(day=1,level=0,options={}){
  plan.overflowSeconds=Math.max(0,plan.estimatedSeconds-targetMinutes*60);plan.overflow=plan.overflowSeconds>0;
  plan.remainingSeconds=Math.max(0,targetMinutes*60-plan.estimatedSeconds);
  if(plan.overflow)notes.push('목표 시간보다 '+Math.ceil(plan.overflowSeconds/60)+'분 깁니다. 실제 예상 시간을 확인해 주세요.');
- return plan;
+ return doseMode==='fit'&&!saved&&level>0?limitWorkIncrease(plan,createPresetPlan(day,level-1,options),plan.coreCount):plan;
 }

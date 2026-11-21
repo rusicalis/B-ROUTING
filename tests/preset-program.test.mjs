@@ -69,7 +69,7 @@ test('fit starts modestly and completion levels add at most five percent of work
  assert.ok(p.exercises.every(e=>e.sets<=5));
  assert.ok(p.exercises.filter(e=>!e.holdSeconds&&!e.workSeconds).every(e=>e.reps<=(e.equipment==='kettlebell'?12:16)));
  for(let level=1;level<=12;level++){
-  const next=createPresetPlan(day,level);assert.ok(work(next)>work(p));assert.ok(work(next)<=work(p)*1.05);
+  const next=createPresetPlan(day,level);if(next.exercises.map(e=>e.id).join('|')===p.exercises.map(e=>e.id).join('|'))assert.ok(work(next)>work(p));else assert.ok(next.challengeCount>=p.challengeCount);assert.ok(work(next)<=work(p)*1.05);assert.equal(next.progressionOverflow,false);
   p=next;
  }
  }
