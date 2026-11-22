@@ -89,3 +89,12 @@ test('saved duplicate movement slots retain their individual tempos and doses af
  assert.ok(result.sourceSteps.filter(row=>row.exerciseIndex===1).every(row=>row.dose.cycleSeconds===7));
 });
 const copySteps=rows=>structuredClone(rows);
+
+test('resizing an active cardio circuit keeps round order and cardio rest intervals',()=>{
+ const plan={kind:'cardio',circuit:true,targetMinutes:30,exercises:['march','punch','step'].map(id=>({id,sets:2,reps:0,workSeconds:50,rest:15,cycleSeconds:2}))};
+ const steps=[1,2].flatMap(set=>plan.exercises.map((_,exerciseIndex)=>({exerciseIndex,set,restAfter:15}))),progress=createProgress(plan,steps);
+ const s={...fixture(),plan,...progress,steps:copySteps(progress.sourceSteps)};
+ const target={...structuredClone(plan),targetMinutes:40,exercises:plan.exercises.map(e=>({...e,sets:3}))},result=applyLiveDuration(s,target);
+ assert.deepEqual(result.sourceSteps.map(row=>row.exerciseIndex),[0,1,2,0,1,2,0,1,2]);
+ assert.ok(result.steps.slice(0,-1).every(row=>row.restAfter===15));assert.equal(result.steps.at(-1).restAfter,0);
+});

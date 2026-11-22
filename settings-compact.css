@@ -1,0 +1,197 @@
+/* Settings controls share the app palette and keep full native touch targets. */
+#settings #appearanceModes {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  padding:14px;
+}
+#settings #appearanceModes .modeChoice {
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  min-width:0;
+  min-height:48px;
+  margin:0;
+  padding:10px;
+  box-sizing:border-box;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:transparent;
+  color:var(--text);
+  font-size:14px;
+  font-weight:700;
+  line-height:1.4;
+  cursor:pointer;
+}
+#settings #appearanceModes .modeChoice:has(input:checked) {
+  border-color:var(--fitness-action,var(--red));
+}
+#settings #appearanceModes .modeChoice input,
+#settings #deviceControls .screenAwakeToggle input {
+  appearance:none;
+  -webkit-appearance:none;
+  display:grid;
+  place-content:center;
+  flex:0 0 20px;
+  width:20px!important;
+  height:20px!important;
+  min-width:20px!important;
+  min-height:20px!important;
+  margin:0;
+  padding:0;
+  border:1.5px solid var(--muted);
+  border-radius:4px;
+  background:transparent;
+  color:#fff;
+  cursor:pointer;
+}
+#settings #appearanceModes .modeChoice input:checked,
+#settings #deviceControls .screenAwakeToggle input:checked {
+  background:var(--fitness-action,var(--red));
+  border-color:var(--fitness-action,var(--red));
+}
+#settings #appearanceModes .modeChoice input:checked::after,
+#settings #deviceControls .screenAwakeToggle input:checked::after {
+  content:"";
+  width:9px;
+  height:5px;
+  margin-top:-3px;
+  border-left:2px solid currentColor;
+  border-bottom:2px solid currentColor;
+  transform:rotate(-45deg);
+}
+#settings #appearanceModes .modeChoice:focus-within,
+#settings #deviceControls .screenAwakeToggle:focus-within {
+  outline:2px solid var(--fitness-action,var(--red));
+  outline-offset:3px;
+}
+
+#settings #deviceControls {
+  display:grid;
+  grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) minmax(0,.95fr);
+  align-items:center;
+  gap:6px;
+  padding:12px;
+  margin:0 0 14px;
+  box-sizing:border-box;
+}
+#settings #deviceControls .screenAwakeToggle {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-width:0;
+  min-height:44px;
+  margin:0;
+  color:var(--text);
+  font-size:12px;
+  font-weight:700;
+  line-height:1.4;
+  cursor:pointer;
+}
+#settings #deviceControls .screenAwakeToggle span { white-space:nowrap; }
+#settings #deviceControls .btn {
+  width:100%;
+  min-width:0;
+  min-height:44px;
+  padding:8px 5px;
+  margin:0;
+  font-size:12px;
+  line-height:1.4;
+  white-space:nowrap;
+}
+#settings #deviceControls [hidden] { display:none!important; }
+
+/* Two equal columns contain the time and notification fields even at 320px. */
+#settings #settingsTasks .settingRow {
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  align-items:start;
+  gap:12px!important;
+  padding:14px!important;
+}
+#settings #settingsTasks .settingRow>.taskIdentity {
+  grid-column:1/-1!important;
+  grid-row:1!important;
+  min-width:0;
+  padding-right:54px;
+}
+#settings #settingsTasks .settingRow .stitle {
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  min-height:44px;
+  box-sizing:border-box;
+  padding:8px;
+  font-size:16px!important;
+}
+#settings #settingsTasks .settingRow .taskDays {
+  margin-top:10px!important;
+  line-height:1.6;
+}
+#settings #settingsTasks .settingRow .taskTimeField,
+#settings #settingsTasks .settingRow .taskNotifyField {
+  display:grid;
+  grid-row:2!important;
+  gap:7px;
+  min-width:0;
+  min-inline-size:0;
+  margin:0;
+  padding:0;
+  background:transparent;
+  border:0;
+  border-radius:0;
+}
+#settings #settingsTasks .settingRow .taskTimeField { grid-column:1!important; }
+#settings #settingsTasks .settingRow .taskNotifyField { grid-column:2!important; }
+#settings #settingsTasks .settingRow .stime,
+#settings #settingsTasks .settingRow .snotify {
+  display:block;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  width:100%!important;
+  inline-size:100%!important;
+  min-width:0!important;
+  min-inline-size:0!important;
+  max-width:100%!important;
+  max-inline-size:100%!important;
+  height:48px!important;
+  min-height:48px!important;
+  box-sizing:border-box;
+  margin:0;
+  padding:8px!important;
+  font-size:16px!important;
+}
+#settings #settingsTasks .settingRow .stime::-webkit-date-and-time-value {
+  min-width:0;
+  min-inline-size:0;
+  max-width:100%;
+  text-align:left;
+}
+#settings #settingsTasks .settingRow .stime::-webkit-datetime-edit {
+  min-width:0;
+  padding:0;
+}
+#settings #settingsTasks .settingRow .deleteTask {
+  position:absolute;
+  top:14px;
+  right:14px;
+  width:44px;
+  min-width:44px;
+  height:44px;
+  min-height:44px;
+  margin:0;
+  padding:8px;
+}
+@media(max-width:350px) {
+  #settings #deviceControls { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  #settings #deviceControls .screenAwakeToggle { grid-column:1/-1; }
+  #settings #appearanceModes { gap:8px; }
+  #settings #appearanceModes .modeChoice { gap:6px; padding:9px 7px; }
+}
+
+#settings #settingsTasks .taskDays{font-size:12px;color:var(--muted)}
+
+#settings #settingsTasks .settingRow .deleteTask{grid-column:auto!important;grid-row:auto!important}

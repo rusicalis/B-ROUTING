@@ -1,4 +1,5 @@
 import {APPEARANCE_MODES,normalizeAppearance,appearancePalette} from './appearance.mjs';
+import {configForSession,sameRoutineConfig} from './session-config.mjs';
 import {applyLiveDuration} from './live-duration.mjs';
 import {createCompactPlan,compactTrackKey,COMPACT_SCHEDULE,RECOMMENDED_PRESETS} from './compact-program.mjs';
 import {incompleteExerciseIndices,adjacentIncompleteExercise,queueFromExercise,applyLiveIntensity,appendCircuitRound,stepDose} from './live-session.mjs';
@@ -10,7 +11,7 @@ import {ScreenAwakeController} from './screen-awake.mjs';
 import {WEEKLY_SCHEDULE,createWeeklyPlan,createCardioPlan,seoulWeekday} from './weekly-program.mjs';
 import { EXERCISES, REGIONS, trackKey, newTrack, migrateWorkout, normalizeRegions, recordCompletion } from './workout-engine.mjs';
 import { IllustratedGuide } from './illustrated-guide.mjs';
-const APP_VERSION='4.2.1';
+const APP_VERSION='4.2.2';
 const LOCAL_STORAGE_KEY='burning-routine-local-v150';
 const DEFAULT_STATE={"version":"2.0.0","settings":{"timezone":"Asia/Seoul","defaultNotify":"exact","pushEnabled":false,"uiMode":"dark","achievementRange":30},"workoutConfig":{"schema":2,"regions":["full"],"variant":1,"mode":"auto","customIds":[]},"tasks":[{"id":"wake","title":"기상","start":"05:30","end":"05:30","days":[1,2,3,4,5],"category":"routine","notify":"exact"},{"id":"workout-weekday","title":"아침 근력운동","start":"05:35","end":"06:00","days":[1,2,3,4,5],"category":"workout","notify":"exact"},{"id":"leave-home","title":"출발","start":"06:05","end":"06:05","days":[1,2,3,4,5],"category":"routine","notify":"off"},{"id":"morning-capability","title":"공부·역량강화","start":"06:30","end":"07:00","days":[1,2,3,4,5],"category":"study","notify":"-5","variants":{"1":"도금·공정 실무","2":"생산·원가관리","3":"도금·문제해결","4":"데이터·AI","5":"관리역량·복습"}},{"id":"day-work","title":"회사 업무","start":"07:00","end":"17:00","days":[1,2,3,4,5],"category":"work","notify":"off"},{"id":"dinner","title":"저녁식사","start":"17:00","end":"17:30","days":[1,2,3,4,5],"category":"routine","notify":"off"},{"id":"overtime-work","title":"회사 잔업 업무","start":"17:30","end":"18:30","days":[1,2,3,4,5],"category":"work","notify":"exact"},{"id":"evening-focus","title":"핵심 자기계발","start":"18:30","end":"20:00","days":[1,2,3,4,5],"category":"study","notify":"exact","variants":{"1":"실무 심화","2":"프로그램 개발","3":"실무 심화","4":"프로그램 개발","5":"실무 종합"}},{"id":"english","title":"영어","start":"20:00","end":"20:25","days":[1,2,3,4,5],"category":"english","notify":"exact"},{"id":"night-practice","title":"실무 공부","start":"20:25","end":"21:00","days":[1,2,3,4,5],"category":"study","notify":"exact"},{"id":"leave-work","title":"퇴근","start":"21:00","end":"21:00","days":[1,2,3,4,5],"category":"routine","notify":"exact"},{"id":"saturday-run","title":"러닝 40~60분","start":"07:00","end":"08:00","days":[6],"category":"workout","notify":"exact"}],"completions":{},"history":[],"progression":{},"workoutPlans":{},"motions":{"pushup":{"clipStart":0,"clipEnd":0,"rev":0},"pushup-close":{"clipStart":0,"clipEnd":0,"rev":0},"row":{"clipStart":0,"clipEnd":0,"rev":0},"deadlift":{"clipStart":0,"clipEnd":0,"rev":0},"squat":{"clipStart":0,"clipEnd":0,"rev":0},"lunge":{"clipStart":0,"clipEnd":0,"rev":0},"shoulder-press":{"clipStart":0,"clipEnd":0,"rev":0},"lateral-raise":{"clipStart":0,"clipEnd":0,"rev":0},"face-pull":{"clipStart":0,"clipEnd":0,"rev":0},"curl":{"clipStart":0,"clipEnd":0,"rev":0},"triceps":{"clipStart":0,"clipEnd":0,"rev":0},"run":{"clipStart":0,"clipEnd":0,"rev":0}},"updatedAt":null,"trainingTracks":{}};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -27,7 +28,7 @@ const weekdayKo=['일','월','화','수','목','금','토'];
 const localDate=(d=new Date())=>new Intl.DateTimeFormat('en-CA',{timeZone:state?.settings?.timezone||'Asia/Seoul',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
 function variantTitle(task,day){return task.id==='workout-weekday'?(COMPACT_SCHEDULE[(day+6)%7]?.title||'근력')+' 운동':task.variants?.[day]||task.title}
 function applyAppearance(mode){const p=appearancePalette(mode),r=document.documentElement;r.dataset.mode=p.id;for(const [name,value]of Object.entries({'--teal':p.accent,'--teal2':p.selected,'--bg':p.background,'--panel':p.panel,'--text':p.text,'--muted':p.muted,'--line':p.line}))r.style.setProperty(name,value);document.querySelector('meta[name=theme-color]')?.setAttribute('content',p.background)}
-function renderAppearanceModes(){const root=$('#appearanceModes');if(!root)return;root.innerHTML=APPEARANCE_MODES.map(m=>'<button class="modeChoice '+(state.settings.uiMode===m.id?'active':'')+'" data-mode="'+m.id+'" aria-pressed="'+(state.settings.uiMode===m.id)+'">'+m.name+'</button>').join('');for(const button of root.querySelectorAll('[data-mode]'))button.onclick=async()=>{state.settings.uiMode=button.dataset.mode;applyAppearance(state.settings.uiMode);await saveState();renderAppearanceModes()}}
+function renderAppearanceModes(){const root=$('#appearanceModes');if(!root)return;root.innerHTML=APPEARANCE_MODES.map(m=>'<label class="modeChoice '+(state.settings.uiMode===m.id?'active':'')+'" data-mode="'+m.id+'"><input type="radio" name="appearanceMode" value="'+m.id+'" '+(state.settings.uiMode===m.id?'checked':'')+'><span>'+m.name+'</span></label>').join('');for(const input of root.querySelectorAll('input'))input.onchange=async()=>{if(!input.checked)return;state.settings.uiMode=input.value;applyAppearance(state.settings.uiMode);await saveState();renderAppearanceModes()}}
 
 function currentTasks(date=new Date()){const day=date.getDay();return state.tasks.filter(t=>t.days.includes(day)).sort((a,b)=>a.start.localeCompare(b.start)).map(t=>({...t,displayTitle:variantTitle(t,day)}))}
 function isDone(taskId,date=localDate()){return !!state.completions?.[date]?.[taskId]}
@@ -45,7 +46,7 @@ function labelCategory(c){return {workout:'운동',study:'역량강화',work:'�
 function renderTaskWeek(){const days=[1,2,3,4,5,6,0];$('#weekGrid').innerHTML=days.map(d=>{const items=state.tasks.filter(t=>t.days.includes(d)).sort((a,b)=>a.start.localeCompare(b.start));return '<div class="daycard"><h3>'+weekdayKo[d]+'요일</h3>'+items.map(t=>'<div class="dayitem"><b>'+t.start+' '+variantTitle(t,d)+'</b><span>'+t.end+'</span></div>').join('')+'</div>'}).join('')}
 function renderHistory(){renderAchievementChart();const arr=state.history||[];const historyRoot=$('#historyList');if(historyRoot)historyRoot.innerHTML=arr.length?arr.slice(0,80).map(h=>'<div class="historyItem"><b>'+escapeHtml(h.title||h.type)+'</b><small>'+h.date+' · '+new Date(h.at||Date.now()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+'</small></div>').join(''):'<div class="empty">아직 기록이 없습니다.</div>'}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function initPushStatus(){if('serviceWorker'in navigator){try{await navigator.serviceWorker.register('./service-worker.js?v=421',{updateViaCache:'none'});}catch(e){console.warn('service worker',e)}}if(!('Notification'in window)){pushText(false,'이 브라우저는 알림을 지원하지 않습니다.');return}pushText(Notification.permission==='granted',Notification.permission==='granted'?'로컬 알림 활성화됨':'로컬 알림 미설정')}
+async function initPushStatus(){if('serviceWorker'in navigator){try{await navigator.serviceWorker.register('./service-worker.js?v=422',{updateViaCache:'none'});}catch(e){console.warn('service worker',e)}}if(!('Notification'in window)){pushText(false,'이 브라우저는 알림을 지원하지 않습니다.');return}pushText(Notification.permission==='granted',Notification.permission==='granted'?'로컬 알림 활성화됨':'로컬 알림 미설정')}
 function pushText(ok,text){const el=$('#pushStatus');if(el)el.innerHTML='<span class="statusDot '+(ok?'ok':'bad')+'"></span>'+text;const mini=$('#pushMini');if(mini)mini.textContent=ok?'LOCAL ON':'LOCAL OFF'}
 async function showLocalNotification(title,body,url='./?view=today'){if(!('Notification'in window)||Notification.permission!=='granted')return false;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,icon:'./icon-192.png',badge:'./icon-192.png',data:{url}});return true}new Notification(title,{body,icon:'./icon-192.png'});return true}catch(e){console.warn('notification',e);return false}}
 function localTimeParts(){const fmt=new Intl.DateTimeFormat('en-GB',{timeZone:state?.settings?.timezone||'Asia/Seoul',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});const parts=Object.fromEntries(fmt.formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));const dayMap={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};return {weekday:dayMap[parts.weekday],hhmm:parts.hour+':'+parts.minute}}
@@ -54,7 +55,7 @@ async function checkLocalNotifications(){if(!state||!('Notification' in window)|
 function startLocalNotificationWatcher(){checkLocalNotifications();setInterval(checkLocalNotifications,30000)}
 async function deleteTask(i){if(!confirm('이 할 일을 삭제하시겠습니까?'))return;state.tasks.splice(i,1);await saveState();renderAll()}
 function fmt(sec){sec=Math.max(0,Math.floor(sec));return pad(Math.floor(sec/60))+':'+pad(sec%60)}
-function renderSettings(){const dayNames=['일','월','화','수','목','금','토'];renderAppearanceModes();$('#settingsTasks').innerHTML=state.tasks.map((t,i)=>'<div class="settingRow" data-i="'+i+'"><div><input class="stitle" value="'+escapeHtml(t.title)+'" style="width:100%;border:1px solid #ccd8d5;border-radius:8px;padding:8px"><div style="font-size:11px;color:var(--muted)">'+t.days.map(d=>dayNames[d]).join('·')+'</div></div><label class="taskTimeField"><span>시간</span><input type="time" class="stime" value="'+t.start+'"></label><label class="taskNotifyField"><span>알림</span><select class="snotify"><option value="exact" '+(t.notify==='exact'?'selected':'')+'>정시</option><option value="-5" '+(t.notify==='-5'?'selected':'')+'>5분 전</option><option value="off" '+(t.notify==='off'?'selected':'')+'>알림 없음</option></select></label><button class="btn danger deleteTask" data-i="'+i+'">×</button></div>').join('');$$('.deleteTask').forEach(b=>b.onclick=()=>deleteTask(Number(b.dataset.i)));$('#motionSettings').innerHTML='<div class="guideInfo">미리보기 가능한 운동 · '+EXERCISES.filter(e=>hasExercisePreview(e.id)).length+'종<br>그림의 재생 아이콘으로 운동을 시작합니다. 이후 그림을 누르면 일시정지·다시 시작합니다.<br>휴식 중에는 다음 세트의 그림을 보여 줍니다.</div>';}
+function renderSettings(){const dayNames=['일','월','화','수','목','금','토'];renderAppearanceModes();$('#settingsTasks').innerHTML=state.tasks.map((t,i)=>'<div class="settingRow" data-i="'+i+'"><div class="taskIdentity"><input class="stitle" value="'+escapeHtml(t.title)+'" style="width:100%;border:1px solid #ccd8d5;border-radius:8px;padding:8px"><div class="taskDays">'+t.days.map(d=>dayNames[d]).join('·')+'</div></div><label class="taskTimeField"><span>시간</span><input type="time" class="stime" value="'+t.start+'"></label><label class="taskNotifyField"><span>알림</span><select class="snotify"><option value="exact" '+(t.notify==='exact'?'selected':'')+'>정시</option><option value="-5" '+(t.notify==='-5'?'selected':'')+'>5분 전</option><option value="off" '+(t.notify==='off'?'selected':'')+'>알림 없음</option></select></label><button class="btn danger deleteTask" data-i="'+i+'">×</button></div>').join('');$$('.deleteTask').forEach(b=>b.onclick=()=>deleteTask(Number(b.dataset.i)));}
 $('#addTask').onclick=()=>{$('#taskForm').style.display=$('#taskForm').style.display==='none'?'block':'none'};
 $('#confirmAddTask').onclick=async()=>{const title=$('#newTitle').value.trim();const days=$$('.newDay:checked').map(x=>Number(x.value));if(!title||!days.length){alert('할 일 이름과 반복요일을 선택해 주세요.');return}state.tasks.push({id:'custom-'+Date.now(),title,start:$('#newStart').value,end:$('#newEnd').value,days,category:$('#newCategory').value,notify:$('#newNotify').value});$('#newTitle').value='';$('#taskForm').style.display='none';await saveState();renderAll()};
 $('#enablePush').onclick=async()=>{try{if(!('Notification'in window))throw new Error('이 브라우저는 알림을 지원하지 않습니다.');const perm=await Notification.requestPermission();if(perm!=='granted')throw new Error('알림 권한이 허용되지 않았습니다.');state.settings.pushEnabled=true;await saveState();pushText(true,'로컬 알림 활성화됨')}catch(e){alert(e.message);pushText(false,'로컬 알림 설정 실패')}};
@@ -78,35 +79,54 @@ function saveDraft(){
 function renderAll(){renderToday();renderWeek();renderHistory();renderSettings();renderWorkoutBuilder()}
 function renderWorkoutBuilder(){
   syncTrainingLayout();
-  const c=state.workoutConfig,t=track(),p=trainingActive()?session.plan:currentPlan();renderProgramBuilder(p);
+  const c=state.workoutConfig,t=track(),p=selectedSettingsPlan();renderProgramBuilder(p);
   $('#bodyweightCount').textContent=EXERCISES.filter(e=>hasExercisePreview(e.id)).length+' EXERCISES';
   const symbols={full:'◎',chest:'◇',back:'⋈',legs:'Ⅱ',shoulders:'⌒',biceps:'∿',triceps:'≋',lowerback:'⊞'};
   $('#regionPicker').innerHTML=REGIONS.map(r=>`<button class="regionButton ${c.regions.includes(r.id)?'active':''}" data-region="${r.id}" aria-pressed="${c.regions.includes(r.id)}"><span class="regionSymbol" aria-hidden="true">${symbols[r.id]}</span><b>${r.name}</b><small>${r.en}</small></button>`).join('');
   $$('[data-region]').forEach(b=>b.onclick=async()=>{
-    if(trainingActive()){toast('진행 중인 운동을 마치거나 종료한 뒤 부위를 변경해 주세요.');return}
-    const id=b.dataset.region;c.regions=id==='full'?['full']:normalizeRegions(c.regions.includes('full')?[id]:c.regions.includes(id)?c.regions.filter(x=>x!==id):[...c.regions,id]);c.mode='auto';await saveState();prepareWorkout();renderWorkoutBuilder();
+    pauseForSettingsEdit();
+    const id=b.dataset.region;c.regions=id==='full'?['full']:normalizeRegions(c.regions.includes('full')?[id]:c.regions.includes(id)?c.regions.filter(x=>x!==id):[...c.regions,id]);c.mode='auto';c.selectionDate=localDate();await saveState();refreshRoutineSelection();
   });
-  $$('[data-variant]').forEach(b=>{b.classList.toggle('active',c.variant===Number(b.dataset.variant)&&c.mode!=='custom');b.setAttribute('aria-pressed',String(c.variant===Number(b.dataset.variant)&&c.mode!=='custom'));b.onclick=async()=>{if(trainingActive()){toast('진행 중인 운동을 먼저 종료해 주세요.');return}c.variant=Number(b.dataset.variant);c.mode='auto';await saveState();prepareWorkout();renderWorkoutBuilder()}});
+  $$('[data-variant]').forEach(b=>{b.classList.toggle('active',c.variant===Number(b.dataset.variant)&&c.mode!=='custom');b.setAttribute('aria-pressed',String(c.variant===Number(b.dataset.variant)&&c.mode!=='custom'));b.onclick=async()=>{pauseForSettingsEdit();c.variant=Number(b.dataset.variant);c.mode='auto';c.selectionDate=localDate();await saveState();refreshRoutineSelection()}});
   $('#trainingLevel').textContent='LEVEL '+pad(t.level+1);
   $('#levelDots').innerHTML=Array.from({length:13},(_,i)=>`<i class="${i<=t.level?'filled':''}" title="${i+1}단계"></i>`).join('');
   $('#trackSummary').textContent=t.completed?`${t.completed}회 완료 · 마지막 운동 ${t.lastCompletedDate}`:'첫 번째 완료를 기다리고 있어요';
-  $('#routineTitle').textContent=p.title||regionTitle()+' · '+(c.mode==='custom'?'사용자 루틴':'루틴 '+c.variant);$('#compactRoutineName').textContent=$('#routineTitle').textContent;
+  $('#routineTitle').textContent=p.title||regionTitle()+' · '+(c.mode==='custom'?'사용자 루틴':'루틴 '+c.variant);$('#compactRoutineName').textContent=configurationSession()?session.plan.title:$('#routineTitle').textContent;
   $('#routineSummary').textContent=p.infinite?'3개 동작 · 30초 휴식 · 무제한 반복':`${p.exercises.length}개 동작 · 약 ${p.estimatedMinutes}분 · 본운동`;
   $('#workoutDayLabel').textContent=p.infinite?'본운동 · 5 / 10 / 15회 · 라운드 뒤 30초 휴식':'본운동 · 부위당 1~2개 동작 · 세트 30초 / 운동 전환 1분 휴식';
   const select=$('#bodyweightExerciseSelect'),value=select.value;
   const filtered=EXERCISES.filter(e=>hasExercisePreview(e.id)&&(c.regions.includes('full')||c.regions.some(r=>e.groups.includes(r))));
   select.innerHTML=filtered.map(e=>`<option value="${e.id}">${e.name}${e.advanced?' · 숙련자':''} · ${e.equipment==='kettlebell'?'12kg × 1':e.equipment==='band'?'60cm 일자 밴드':e.equipment==='chair'?'고정 의자':'맨몸'}</option>`).join('');if(filtered.some(e=>e.id===value))select.value=value;
   $('#customWorkoutList').innerHTML=c.customIds.map(id=>{const e=EXERCISES.find(x=>x.id===id);return `<div class="routineItem"><b>${e.name}</b><button class="btn danger" data-remove="${id}" aria-label="${e.name} 삭제">×</button></div>`}).join('');
-  $$('[data-remove]').forEach(b=>b.onclick=async()=>{if(trainingActive()){toast('진행 중인 운동을 먼저 종료해 주세요.');return}c.customIds=c.customIds.filter(id=>id!==b.dataset.remove);if(!c.customIds.length)c.mode='auto';await saveState();renderWorkoutBuilder();prepareWorkout()});
-  if(!trainingActive()&&(!session||session.phase!=='done')){previewPlan=p;renderExerciseRail()}
+  $$('[data-remove]').forEach(b=>b.onclick=async()=>{pauseForSettingsEdit();c.customIds=c.customIds.filter(id=>id!==b.dataset.remove);c.mode='custom';await saveState();refreshRoutineSelection()});
+  if(!configurationSession()&&p.exercises.length){previewPlan=p;renderExerciseRail()}else renderSettingsExerciseRail(p);$('#autoGenerateWorkout').disabled=c.mode==='custom'&&!c.customIds.length;$('#applyCustomWorkout').disabled=!c.customIds.length;
 }
 function renderExerciseRail(){
-  const p=trainingActive()?session.plan:previewPlan;if(!p)return;
-  const active=trainingActive()?session.steps[session.index]?.exerciseIndex:previewIndex;
-  $('#mobileExerciseSelect').innerHTML=p.exercises.map((e,i)=>'<option value="'+i+'">'+(i+1)+'. '+escapeHtml(e.name)+'</option>').join('');$('#mobileExerciseSelect').value=String(active||0);
-  $('#exerciseRail').innerHTML=p.exercises.map((e,i)=>`<button class="exerciseTile ${i===active?'active':''}" data-preview="${i}" aria-pressed="${i===active}"><span class="tileNumber">${pad(i+1)}<small>${e.equipment==='kettlebell'?'12kg':e.equipment==='band'?'BAND':e.equipment==='chair'?'CHAIR':'BW'}</small></span><b>${e.name}</b><span>${e.sets}세트 × ${doseText(e)}${e.eachSide?' / 측':''}</span><i>${e.groups.map(partName).join(' · ')}</i></button>`).join('');
-  $$('[data-preview]').forEach(b=>b.onclick=()=>{if(trainingActive()){toast('운동 중에는 현재 세트의 동작을 표시합니다.');return}previewIndex=Number(b.dataset.preview);showExercise(previewPlan.exercises[previewIndex],previewIndex);renderExerciseRail()});
+ const p=configurationSession()?session.plan:previewPlan;if(!p)return;
+ const active=configurationSession()?session.steps[session.index]?.exerciseIndex:previewIndex;
+ $('#mobileExerciseSelect').innerHTML=p.exercises.map((e,i)=>'<option value="'+i+'">'+(i+1)+'. '+escapeHtml(e.name)+'</option>').join('');$('#mobileExerciseSelect').value=String(active||0);
+ renderSettingsExerciseRail();
 }
+function renderSettingsExerciseRail(p=selectedSettingsPlan()){
+ $('#exerciseRail').innerHTML=p.exercises.length?p.exercises.map((e,i)=>'<button class="exerciseTile '+(!configurationSession()&&i===previewIndex?'active':'')+'" data-preview="'+i+'" data-exercise-id="'+e.id+'"><span class="tileNumber">'+pad(i+1)+'<small>'+(e.equipment==='kettlebell'?'12kg':e.equipment==='band'?'BAND':e.equipment==='chair'?'CHAIR':'BW')+'</small></span><b>'+escapeHtml(e.name)+'</b><span>'+e.sets+'세트 × '+doseText(e)+(e.eachSide?' / 측':'')+'</span><i>'+e.groups.map(partName).join(' · ')+'</i></button>').join(''):'<p class="emptyRoutine">운동을 추가해 주세요.</p>';
+ $$('[data-preview]').forEach(b=>b.onclick=()=>{if(configurationSession()){for(const tile of $$('[data-preview]'))tile.classList.toggle('active',tile===b);return}previewIndex=Number(b.dataset.preview);showExercise(previewPlan.exercises[previewIndex],previewIndex);renderExerciseRail()});
+}
+function selectedSettingsPlan(){const p=currentPlan();return state.workoutConfig.mode==='custom'&&!state.workoutConfig.customIds.length?{...p,title:'직접 운동 선택',exercises:[],estimatedMinutes:0}:p}
+function configurationSession(){return session&&['prep','work','rest','feedback','stopped'].includes(session.phase)}
+function pauseForSettingsEdit(){if(session&&['work','rest'].includes(session.phase)&&!session.paused)togglePause();else if(session?.phase==='prep'){session.phase='work';session.paused=true;session.prepMs=0;$('#prepOverlay').classList.remove('show');$('#pauseWorkout').disabled=false;updateGuideContext();syncDiagramControls();saveDraft()}}
+function refreshRoutineSelection(){if(!configurationSession())prepareWorkout();renderWorkoutBuilder()}
+async function applySelectedRoutine(){
+ if(state.workoutConfig.mode==='custom'&&!state.workoutConfig.customIds.length){toast('운동을 추가해 주세요.');return}
+ if(session?.phase==='feedback'){switchView('workout');$('#completionFeedback').scrollIntoView({behavior:'smooth',block:'center'});toast('완료한 운동의 기록을 먼저 저장해 주세요.');return}
+ if(configurationSession()&&sameRoutineConfig(configForSession(session),state.workoutConfig)){switchView('workout');syncTrainingLayout();return}
+ if(configurationSession()){
+  normalizeProgress(session);state.unfinishedWorkouts=(state.unfinishedWorkouts||[]).filter(attempt=>attempt.id!==session.id);
+  if(!allStepsComplete(session))state.unfinishedWorkouts.unshift(clone({...session,paused:true,archivedReason:'routine-replaced'}));state.unfinishedWorkouts=state.unfinishedWorkouts.slice(0,30);
+  clearInterval(clockTimer);session=null;delete state.activeWorkout;
+ }
+ state.settings.compactWorkout=true;prepareWorkout();renderWorkoutBuilder();await saveState();switchView('workout');window.scrollTo({top:0,behavior:'smooth'});
+}
+
 function ensureStudio(){
   if(studio&&!studio.failed)return;
   if(studio)studio.dispose();
@@ -146,12 +166,13 @@ function resetControls(){
 }
 function updateSessionProgress(){const confirmed=session?.confirmed||0,total=session?.sourceSteps?.length||previewPlan?.steps?.length||previewPlan?.exercises.reduce((n,e)=>n+e.sets,0)||0,infinite=session?.plan?.infinite;const pct=total?Math.round(confirmed/total*100):0;$('#sessionProgressText').textContent=infinite?Math.floor(confirmed/3)+'라운드 완료 · '+confirmed+'세트':confirmed+' / '+total+'세트 완료';$('#sessionProgressPercent').textContent=infinite?'∞':pct+'%';$('#sessionProgressBar').value=pct}
 function beginWorkout(){
+ if(state.workoutConfig.mode==='custom'&&!state.workoutConfig.customIds.length){switchView('settings');$('#bodyweightExerciseSelect').focus();toast('운동을 추가해 주세요.');return}
   screenAwake.sync();$('#trainingToast').classList.remove('show');
   if(session?.phase==='done')prepareWorkout();
   if(trainingActive())return;
   if(followTodayProgram()){prepareWorkout();renderWorkoutBuilder()}
   const plan=clone(previewPlan),steps=[];if(plan.steps?.length)steps.push(...plan.steps);else if(plan.circuit){for(let s=1;s<=Math.max(...plan.exercises.map(e=>e.sets));s++)plan.exercises.forEach((e,i)=>{if(s<=e.sets)steps.push({exerciseIndex:i,set:s})})}else plan.exercises.forEach((e,i)=>{for(let s=1;s<=e.sets;s++)steps.push({exerciseIndex:i,set:s})});
-  const progress=createProgress(plan,steps);session={id:crypto.randomUUID(),date:localDate(),trackKey:currentTrackKey(),plan,...progress,steps:progress.sourceSteps.map(s=>({...s})),index:0,intensity:plan.intensity||'normal',confirmed:0,phase:'prep',paused:false,prepMs:3000,setMs:0,activeMs:0,restMs:0};
+  const progress=createProgress(plan,steps);session={id:crypto.randomUUID(),date:localDate(),trackKey:currentTrackKey(),config:clone(state.workoutConfig),presetSnapshot:clone(state.workoutConfig.mode==='preset'?state.savedPresets.find(p=>p.id===plan.presetId)||null:null),plan,...progress,steps:progress.sourceSteps.map(s=>({...s})),index:0,intensity:plan.intensity||'normal',confirmed:0,phase:'prep',paused:false,prepMs:3000,setMs:0,activeMs:0,restMs:0};
   state.settings.compactWorkout=true;syncTrainingLayout();window.scrollTo({top:0,behavior:'smooth'});$('#startWorkout').hidden=true;$('#stopWorkout').hidden=false;$('#prepOverlay').classList.add('show');$('#prepCount').textContent='3';$('#pauseWorkout').disabled=true;showSessionExercise();startClock();saveDraft();
 }
 function startClock(){clearInterval(clockTimer);lastClock=performance.now();clockTimer=setInterval(tickTraining,100)}
@@ -206,9 +227,9 @@ function stopWorkout(){if(!trainingActive())return;if(session.plan.infinite){con
 function switchView(v){$$('.view').forEach(x=>x.classList.toggle('active',x.id===v));$$('#nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));if(v==='workout'){if(!previewPlan)prepareWorkout();ensureStudio();studio.active=true;studio.resize()}else if(studio)studio.active=false}
 function openTraining(){switchView('workout');window.scrollTo({top:0,behavior:'smooth'})}
 $$('#nav button').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
-$('#autoGenerateWorkout').onclick=async()=>{if(trainingActive()){toast('현재 운동을 마치거나 종료해 주세요.');return}state.settings.compactWorkout=true;await saveState();prepareWorkout();renderWorkoutBuilder();switchView('workout');window.scrollTo({top:0,behavior:'smooth'});toast('루틴을 적용했습니다. 그림의 재생 아이콘으로 시작하세요.')};
-$('#addBodyweightExercise').onclick=async()=>{if(trainingActive()){toast('진행 중인 운동을 먼저 종료해 주세요.');return}const id=$('#bodyweightExerciseSelect').value;if(!id)return;if(state.workoutConfig.customIds.includes(id)){toast('이미 추가한 운동입니다.');return}if(state.workoutConfig.customIds.length>=10){toast('사용자 루틴은 최대 10개 동작까지 추가할 수 있습니다.');return}state.workoutConfig.customIds.push(id);await saveState();renderWorkoutBuilder()};
-$('#applyCustomWorkout').onclick=async()=>{if(trainingActive()){toast('진행 중인 운동을 먼저 종료해 주세요.');return}if(!state.workoutConfig.customIds.length){toast('운동을 먼저 추가해 주세요.');return}state.workoutConfig.mode='custom';await saveState();prepareWorkout();renderWorkoutBuilder();toast('사용자 루틴을 적용했습니다.')};
+$('#autoGenerateWorkout').onclick=applySelectedRoutine;
+$('#addBodyweightExercise').onclick=async()=>{pauseForSettingsEdit();const id=$('#bodyweightExerciseSelect').value;if(!id)return;if(state.workoutConfig.customIds.includes(id)){toast('이미 추가한 운동입니다.');return}if(state.workoutConfig.customIds.length>=10){toast('사용자 루틴은 최대 10개 동작까지 추가할 수 있습니다.');return}state.workoutConfig.customIds.push(id);state.workoutConfig.mode='custom';state.workoutConfig.selectionDate=localDate();await saveState();refreshRoutineSelection()};
+$('#applyCustomWorkout').onclick=async()=>{state.workoutConfig.mode='custom';await applySelectedRoutine()};
 $('#startWorkout').onclick=beginWorkout;$('#nextWorkout').onclick=confirmSet;$('#pauseWorkout').onclick=togglePause;$('#skipRest').onclick=endRest;$('#stopWorkout').onclick=stopWorkout;
 $$('[data-feedback]').forEach(b=>b.onclick=()=>completeWorkout(b.dataset.feedback));
 $$('button[data-guide-phase]').forEach(b=>b.onclick=()=>{if(!studio||trainingActive())return;studio.playing=false;studio.phase=[0,.5,.85][Number(b.dataset.guidePhase)];studio.draw();$('#previewToggle').textContent='▶'});
@@ -256,28 +277,28 @@ function renderProgramBuilder(plan){
   $('#targetMinutes').value=plan.targetMinutes;$('#targetMinutes').min='30';$('#targetMinutes').max='60';$('#doseMode').value=c.doseMode;$('#bridgeVariant').value=c.bridgeVariant;
   $('#programSummary').innerHTML='<b>'+escapeHtml(plan.title)+'</b><span>'+(plan.infinite?'무제한 반복 · 라운드 뒤 30초 휴식':'목표 '+plan.targetMinutes+'분 · 예상 '+plan.estimatedMinutes+'분')+'</span>'+(plan.notes||[]).map(n=>'<small>'+escapeHtml(n)+'</small>').join('');
  }else $('#programSummary').innerHTML=c.mode==='weekly'?'<b>'+escapeHtml(plan.title)+'</b><span>이전 주간 분할 · 약 '+plan.estimatedMinutes+'분</span>':c.mode==='cardio'?'<b>근력 루틴과 별개로 선택하는 유산소</b><span>점프 없이 진행하는 맨몸 인터벌</span>':'<b>자유 구성</b><span>원하는 운동을 선택한 뒤 아래에서 수량을 편집해 프리셋으로 저장할 수 있습니다.</span>';
- syncDurationPicker(plan.targetMinutes);$('#quickRoutine').value=c.mode==='custom'?'custom':c.mode==='weekly'?'preset':c.mode;$('#quickPlanSummary').textContent=(plan.title||regionTitle())+(plan.infinite?' · 무제한 반복':' · 예상 '+plan.estimatedMinutes+'분')+(plan.trainingStage?' · '+plan.trainingStage+' 단계':'');$('.customDetails').hidden=c.mode!=='custom';if(c.mode==='custom')$('.customDetails').open=true;renderDoseEditor(plan);
+ syncDurationPicker(configurationSession()?session.plan.targetMinutes:plan.targetMinutes);$('#quickRoutine').value=c.mode==='custom'?'custom':c.mode==='weekly'?'preset':c.mode;$('#quickPlanSummary').textContent=(plan.title||regionTitle())+(plan.infinite?' · 무제한 반복':' · 예상 '+plan.estimatedMinutes+'분')+(plan.trainingStage?' · '+plan.trainingStage+' 단계':'');$('.customDetails').hidden=c.mode!=='custom';if(c.mode==='custom')$('.customDetails').open=true;renderDoseEditor(plan);
 }
 function renderDoseEditor(plan){
  $('#presetDoseRows').innerHTML=plan.exercises.map((e,i)=>'<div class="presetDoseRow"><b>'+escapeHtml(e.name)+(e.eachSide?' · 양쪽 각각':'')+'</b><label>세트<input type="number" min="1" max="30" value="'+e.sets+'" data-dose-index="'+i+'" data-dose-field="sets"></label><label>'+((e.holdSeconds||e.workSeconds)?'초':'회')+'<input type="number" min="1" max="'+((e.holdSeconds||e.workSeconds)?300:100)+'" value="'+(e.holdSeconds||e.workSeconds||e.reps)+'" data-dose-index="'+i+'" data-dose-field="'+(e.holdSeconds?'holdSeconds':e.workSeconds?'workSeconds':'reps')+'"></label></div>').join('');
  $('#deletePreset').hidden=!state.savedPresets.some(p=>p.id===state.workoutConfig.presetId);
 }
-async function changePresetSetting(key,value){if(trainingActive()){toast('운동 종료 후 설정을 바꿔 주세요.');renderWorkoutBuilder();return}state.workoutConfig[key]=value;state.workoutConfig.selectionDate=localDate();await saveState();prepareWorkout();renderWorkoutBuilder();renderWeek()}
+async function changePresetSetting(key,value){pauseForSettingsEdit();state.workoutConfig[key]=value;if(key==='presetId')state.workoutConfig.mode='preset';state.workoutConfig.selectionDate=localDate();await saveState();refreshRoutineSelection();renderWeek()}
 $('#presetSelect').onchange=e=>changePresetSetting('presetId',e.target.value);
 $('#targetMinutes').onchange=e=>changePresetSetting(selectedDurationKey(),[30,40,50,60].reduce((best,n)=>Math.abs(n-Number(e.target.value))<Math.abs(best-Number(e.target.value))?n:best,30));
 $('#doseMode').onchange=e=>changePresetSetting('doseMode',e.target.value);
 $('#bridgeVariant').onchange=e=>changePresetSetting('bridgeVariant',e.target.value);
 $('#savePreset').onclick=async()=>{
- if(trainingActive()){toast('운동 종료 후 저장해 주세요.');return}
- const plan=clone(previewPlan),name=$('#presetName').value.trim();if(!name){toast('프리셋 이름을 입력해 주세요.');$('#presetName').focus();return}
+ pauseForSettingsEdit();
+ const plan=clone(selectedSettingsPlan()),name=$('#presetName').value.trim();if(!name){toast('프리셋 이름을 입력해 주세요.');$('#presetName').focus();return}
  for(const input of $$('[data-dose-index]'))plan.exercises[Number(input.dataset.doseIndex)][input.dataset.doseField]=Number(input.value);
  if(plan.blocks)for(const b of plan.blocks)if(b.kind==='circuit'){b.rounds=plan.exercises[b.exerciseIndices[0]].sets;for(const i of b.exerciseIndices)plan.exercises[i].sets=b.rounds}
- const result=normalizeSavedPreset({id:'saved-'+crypto.randomUUID(),name,baseTargetMinutes:previewPlan.targetMinutes||state.workoutConfig.targetMinutes,exercises:plan.exercises,blocks:plan.blocks});if(!result.ok){toast(result.error);return}
+ const result=normalizeSavedPreset({id:'saved-'+crypto.randomUUID(),name,baseTargetMinutes:plan.targetMinutes||state.workoutConfig.targetMinutes,exercises:plan.exercises,blocks:plan.blocks});if(!result.ok){toast(result.error);return}
  if(state.savedPresets.length>=30){toast('저장한 프리셋은 최대 30개입니다. 먼저 하나를 삭제해 주세요.');return}
- state.savedPresets.push(result.preset);state.workoutConfig.mode='preset';state.workoutConfig.presetId=result.preset.id;await saveState();prepareWorkout();renderWorkoutBuilder();toast('수량을 저장하고 프리셋을 적용했습니다.');
+ state.savedPresets.push(result.preset);state.workoutConfig.mode='preset';state.workoutConfig.presetId=result.preset.id;await saveState();refreshRoutineSelection();toast('프리셋을 저장했습니다.');
 };
-$('#deletePreset').onclick=async()=>{if(trainingActive()){toast('운동 종료 후 삭제해 주세요.');return}state.savedPresets=state.savedPresets.filter(p=>p.id!==state.workoutConfig.presetId);state.workoutConfig.presetId='user-week';await saveState();prepareWorkout();renderWorkoutBuilder();toast('저장 프리셋을 삭제했습니다.')};
-async function selectProgram(mode,day){if(trainingActive()){toast('진행 중인 운동을 먼저 종료해 주세요.');return}state.workoutConfig.mode=mode;state.workoutConfig.planDay=day||seoulWeekday();state.workoutConfig.selectionDate=localDate();await saveState();prepareWorkout();renderWorkoutBuilder()}
+$('#deletePreset').onclick=async()=>{pauseForSettingsEdit();state.savedPresets=state.savedPresets.filter(p=>p.id!==state.workoutConfig.presetId);state.workoutConfig.presetId='user-week';await saveState();refreshRoutineSelection();toast('저장 프리셋을 삭제했습니다.')};
+async function selectProgram(mode,day){pauseForSettingsEdit();state.workoutConfig.mode=mode;state.workoutConfig.planDay=day||seoulWeekday();state.workoutConfig.selectionDate=localDate();await saveState();refreshRoutineSelection()}
 function followTodayProgram(){const c=state?.workoutConfig,today=localDate(),draft=state?.activeWorkout;if(!c||draft&&(draft.date===today||draft.phase==='feedback'))return false;if(['preset','weekly','cardio'].includes(c.mode)&&c.selectionDate!==today){c.mode='preset';c.planDay=seoulWeekday();c.selectionDate=today;return true}return false}
 function renderWeek(){renderTaskWeek();const root=$('#weeklyTrainingSummary');if(!root)return;root.innerHTML='<div class="panel weeklyPlanPanel"><div class="panelhead">기본 주간 루틴</div><div class="weeklyPlanCards">'+COMPACT_SCHEDULE.map(day=>{const p=createCompactPlan(day.day,0,{targetMinutes:state.workoutConfig.targetMinutes});return '<button data-week-open="'+day.day+'"><b>'+day.name+' · '+day.title+'</b><span>'+p.exercises.map(e=>e.name).join(' / ')+'</span><small>'+(p.infinite?'무제한 서킷':p.exercises.length+'개 동작 · 예상 '+p.estimatedMinutes+'분')+'</small></button>'}).join('')+'</div></div>';$$('[data-week-open]').forEach(button=>button.onclick=async()=>{if(trainingActive()){switchView('workout');toast('현재 운동을 먼저 마치거나 종료해 주세요.');return}state.workoutConfig.presetId='user-week';await selectProgram('preset',Number(button.dataset.weekOpen));switchView('workout')})}
 function setupControlsLayout(){
@@ -341,10 +362,11 @@ async function changeWorkoutDuration(minutes){
  if(![30,40,50,60].includes(minutes)||session?.phase==='feedback')return;
  if(!session||!['prep','work','rest','stopped'].includes(session.phase)){await changePresetSetting('targetMinutes',minutes);return}
  if(session.plan.infinite||session.plan.targetMinutes===minutes){syncDurationPicker(session.plan.targetMinutes);return}
- const c=state.workoutConfig,level=session.plan.level,saved=state.savedPresets.find(p=>p.id===session.plan.presetId);
+ const c=configForSession(session),sameSelection=sameRoutineConfig(c,state.workoutConfig),level=session.plan.level;
+ const saved=c.mode==='preset'?(session.presetSnapshot||state.savedPresets.find(p=>p.id===session.plan.presetId)||(!session.plan.compact&&session.plan.presetId?normalizeSavedPreset({id:session.plan.presetId,name:session.plan.title,baseTargetMinutes:c.targetMinutes,exercises:session.plan.baseExercises||session.plan.exercises,blocks:session.plan.blocks}).preset:null)):null;
  const options={...c,targetMinutes:minutes,intensity:'normal',doseMode:'fit',presetId:session.plan.presetId};
- const plan=session.plan.compact?createCompactPlan(session.plan.day,level,options):saved?createPresetPlan(session.plan.day,level,{...options,savedPreset:saved}):c.mode==='cardio'?createCardioPlan(level,minutes):timedFreePlan(options,level);
- session=applyLiveDuration(session,plan);previewPlan=session.plan;c.targetMinutes=minutes;c.doseMode='fit';
+ const plan=session.plan.compact?createCompactPlan(session.plan.day,level,options):saved?createPresetPlan(session.plan.day,level,{...options,savedPreset:saved}):c.mode==='cardio'?{...createCardioPlan(level,minutes),targetMinutes:minutes}:timedFreePlan(options,level);
+ session=applyLiveDuration(session,plan);previewPlan=session.plan;session.config={...c,targetMinutes:minutes,doseMode:'fit'};if(sameSelection){state.workoutConfig.targetMinutes=minutes;state.workoutConfig.doseMode='fit'}
  session.confirmed=session.completedStepIds.length;
  if(session.phase==='rest')showRestPreview();else showSessionExercise();
  updateSessionProgress();renderOrder();syncDiagramControls();
@@ -358,7 +380,7 @@ function selectedDurationKey(){return 'targetMinutes'}
 
 
 function relocateRoutineSettings(){
- const settings=$('#settings'),configuration=document.createElement('section');configuration.id='trainingConfiguration';configuration.className='trainingConfiguration';configuration.innerHTML='<div class="headline"><div><h2>운동 루틴 설정</h2><div class="sub">요일 · 운동 종류 · 세트와 프리셋을 설정하세요</div></div></div>';
+ const settings=$('#settings'),configuration=document.createElement('section');configuration.id='trainingConfiguration';configuration.className='trainingConfiguration';configuration.innerHTML='<div class="headline"><div><h2>운동 루틴 설정</h2></div></div>';
  for(const node of [$('.workoutBuilder'),$('.trainingHeading'),$('#exerciseRail')])configuration.append(node);settings.prepend(configuration);
  const schedule=$('#settingsTasks').closest('.panel');schedule.id='scheduleSettings';const shortcuts=document.createElement('div');shortcuts.className='settingsShortcuts';const appearance=$('#appearanceModes').closest('.panel');appearance.id='appearanceSettings';shortcuts.innerHTML='<button data-settings-anchor="trainingConfiguration">운동 설정</button><button data-settings-anchor="appearanceSettings">화면 모드</button><button data-settings-anchor="scheduleSettings">일정 · 알림</button>';settings.prepend(shortcuts);const heading=settings.querySelector(':scope>.headline');if(heading)settings.prepend(heading);
  for(const button of $$('[data-settings-anchor]'))button.onclick=()=>document.getElementById(button.dataset.settingsAnchor).scrollIntoView({behavior:'smooth',block:'start'});

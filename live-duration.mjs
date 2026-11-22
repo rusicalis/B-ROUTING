@@ -46,6 +46,7 @@ export function applyLiveDuration(session,nextPlan){
  }
  s.sourceSteps=rows;s.nextStepId=nextId;s.intensity=intensity;
  s.plan={...copy(nextPlan),exercises,intensity};
+ if(s.plan.circuit&&!s.plan.blocks?.length)s.plan.blocks=[{kind:'circuit',exerciseIndices:nextPlan.exercises.map((_,index)=>index),rounds:Math.max(...exercises.map(e=>e.sets))}];
  // Preserve historical circuit ordering where a saved preset uses rounds.
  for(const block of s.plan.blocks||[])if(block.kind==='circuit'){
   const indices=block.exerciseIndices.map(index=>slots.findIndex(slot=>slot.key===newSlots[index]?.key));block.exerciseIndices=indices;
