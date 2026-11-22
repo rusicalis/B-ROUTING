@@ -1,4 +1,5 @@
 import {APPEARANCE_MODES,normalizeAppearance,appearancePalette} from './appearance.mjs';
+import {applyLiveDuration} from './live-duration.mjs';
 import {createCompactPlan,compactTrackKey,COMPACT_SCHEDULE,RECOMMENDED_PRESETS} from './compact-program.mjs';
 import {incompleteExerciseIndices,adjacentIncompleteExercise,queueFromExercise,applyLiveIntensity,appendCircuitRound,stepDose} from './live-session.mjs';
 import {createFreeDurationPlan} from './duration-catalog.mjs';
@@ -9,7 +10,7 @@ import {ScreenAwakeController} from './screen-awake.mjs';
 import {WEEKLY_SCHEDULE,createWeeklyPlan,createCardioPlan,seoulWeekday} from './weekly-program.mjs';
 import { EXERCISES, REGIONS, trackKey, newTrack, migrateWorkout, normalizeRegions, recordCompletion } from './workout-engine.mjs';
 import { IllustratedGuide } from './illustrated-guide.mjs';
-const APP_VERSION='4.2.0';
+const APP_VERSION='4.2.1';
 const LOCAL_STORAGE_KEY='burning-routine-local-v150';
 const DEFAULT_STATE={"version":"2.0.0","settings":{"timezone":"Asia/Seoul","defaultNotify":"exact","pushEnabled":false,"uiMode":"dark","achievementRange":30},"workoutConfig":{"schema":2,"regions":["full"],"variant":1,"mode":"auto","customIds":[]},"tasks":[{"id":"wake","title":"기상","start":"05:30","end":"05:30","days":[1,2,3,4,5],"category":"routine","notify":"exact"},{"id":"workout-weekday","title":"아침 근력운동","start":"05:35","end":"06:00","days":[1,2,3,4,5],"category":"workout","notify":"exact"},{"id":"leave-home","title":"출발","start":"06:05","end":"06:05","days":[1,2,3,4,5],"category":"routine","notify":"off"},{"id":"morning-capability","title":"공부·역량강화","start":"06:30","end":"07:00","days":[1,2,3,4,5],"category":"study","notify":"-5","variants":{"1":"도금·공정 실무","2":"생산·원가관리","3":"도금·문제해결","4":"데이터·AI","5":"관리역량·복습"}},{"id":"day-work","title":"회사 업무","start":"07:00","end":"17:00","days":[1,2,3,4,5],"category":"work","notify":"off"},{"id":"dinner","title":"저녁식사","start":"17:00","end":"17:30","days":[1,2,3,4,5],"category":"routine","notify":"off"},{"id":"overtime-work","title":"회사 잔업 업무","start":"17:30","end":"18:30","days":[1,2,3,4,5],"category":"work","notify":"exact"},{"id":"evening-focus","title":"핵심 자기계발","start":"18:30","end":"20:00","days":[1,2,3,4,5],"category":"study","notify":"exact","variants":{"1":"실무 심화","2":"프로그램 개발","3":"실무 심화","4":"프로그램 개발","5":"실무 종합"}},{"id":"english","title":"영어","start":"20:00","end":"20:25","days":[1,2,3,4,5],"category":"english","notify":"exact"},{"id":"night-practice","title":"실무 공부","start":"20:25","end":"21:00","days":[1,2,3,4,5],"category":"study","notify":"exact"},{"id":"leave-work","title":"퇴근","start":"21:00","end":"21:00","days":[1,2,3,4,5],"category":"routine","notify":"exact"},{"id":"saturday-run","title":"러닝 40~60분","start":"07:00","end":"08:00","days":[6],"category":"workout","notify":"exact"}],"completions":{},"history":[],"progression":{},"workoutPlans":{},"motions":{"pushup":{"clipStart":0,"clipEnd":0,"rev":0},"pushup-close":{"clipStart":0,"clipEnd":0,"rev":0},"row":{"clipStart":0,"clipEnd":0,"rev":0},"deadlift":{"clipStart":0,"clipEnd":0,"rev":0},"squat":{"clipStart":0,"clipEnd":0,"rev":0},"lunge":{"clipStart":0,"clipEnd":0,"rev":0},"shoulder-press":{"clipStart":0,"clipEnd":0,"rev":0},"lateral-raise":{"clipStart":0,"clipEnd":0,"rev":0},"face-pull":{"clipStart":0,"clipEnd":0,"rev":0},"curl":{"clipStart":0,"clipEnd":0,"rev":0},"triceps":{"clipStart":0,"clipEnd":0,"rev":0},"run":{"clipStart":0,"clipEnd":0,"rev":0}},"updatedAt":null,"trainingTracks":{}};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -44,7 +45,7 @@ function labelCategory(c){return {workout:'운동',study:'역량강화',work:'�
 function renderTaskWeek(){const days=[1,2,3,4,5,6,0];$('#weekGrid').innerHTML=days.map(d=>{const items=state.tasks.filter(t=>t.days.includes(d)).sort((a,b)=>a.start.localeCompare(b.start));return '<div class="daycard"><h3>'+weekdayKo[d]+'요일</h3>'+items.map(t=>'<div class="dayitem"><b>'+t.start+' '+variantTitle(t,d)+'</b><span>'+t.end+'</span></div>').join('')+'</div>'}).join('')}
 function renderHistory(){renderAchievementChart();const arr=state.history||[];const historyRoot=$('#historyList');if(historyRoot)historyRoot.innerHTML=arr.length?arr.slice(0,80).map(h=>'<div class="historyItem"><b>'+escapeHtml(h.title||h.type)+'</b><small>'+h.date+' · '+new Date(h.at||Date.now()).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})+'</small></div>').join(''):'<div class="empty">아직 기록이 없습니다.</div>'}
 function escapeHtml(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-async function initPushStatus(){if('serviceWorker'in navigator){try{await navigator.serviceWorker.register('./service-worker.js?v=420',{updateViaCache:'none'});}catch(e){console.warn('service worker',e)}}if(!('Notification'in window)){pushText(false,'이 브라우저는 알림을 지원하지 않습니다.');return}pushText(Notification.permission==='granted',Notification.permission==='granted'?'로컬 알림 활성화됨':'로컬 알림 미설정')}
+async function initPushStatus(){if('serviceWorker'in navigator){try{await navigator.serviceWorker.register('./service-worker.js?v=421',{updateViaCache:'none'});}catch(e){console.warn('service worker',e)}}if(!('Notification'in window)){pushText(false,'이 브라우저는 알림을 지원하지 않습니다.');return}pushText(Notification.permission==='granted',Notification.permission==='granted'?'로컬 알림 활성화됨':'로컬 알림 미설정')}
 function pushText(ok,text){const el=$('#pushStatus');if(el)el.innerHTML='<span class="statusDot '+(ok?'ok':'bad')+'"></span>'+text;const mini=$('#pushMini');if(mini)mini.textContent=ok?'LOCAL ON':'LOCAL OFF'}
 async function showLocalNotification(title,body,url='./?view=today'){if(!('Notification'in window)||Notification.permission!=='granted')return false;try{if('serviceWorker'in navigator){const reg=await navigator.serviceWorker.ready;await reg.showNotification(title,{body,icon:'./icon-192.png',badge:'./icon-192.png',data:{url}});return true}new Notification(title,{body,icon:'./icon-192.png'});return true}catch(e){console.warn('notification',e);return false}}
 function localTimeParts(){const fmt=new Intl.DateTimeFormat('en-GB',{timeZone:state?.settings?.timezone||'Asia/Seoul',weekday:'short',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});const parts=Object.fromEntries(fmt.formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));const dayMap={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};return {weekday:dayMap[parts.weekday],hhmm:parts.hour+':'+parts.minute}}
@@ -285,7 +286,7 @@ function setupControlsLayout(){
  for(const node of [$('#programSummary'),$('.presetEditor')])advanced.append(node);$('#doseMode').closest('label').hidden=true;$('#bridgeVariant').closest('label').hidden=true;
  $('#targetMinutes').closest('label').hidden=true;const apply=$('#autoGenerateWorkout');apply.classList.add('quickApply');$('#presetControls').after(apply);
  const instruction=document.createElement('section');instruction.className='instructionBlock';instruction.innerHTML='<h3>운동 방법</h3>';$('.timerBox').after(instruction);for(const node of [$('#woCue'),$('#formCues'),$('#exerciseAlternative')])instruction.append(node);const source=document.createElement('div');source.className='diagramSource';source.append($('#mediaAttribution'));instruction.append(source);$('.studioFootnote').remove();
- for(const input of $$('[name=workoutMinutes]'))input.onchange=()=>{if(trainingActive()){toast('운동 종료 후 시간을 바꿔 주세요.');syncDurationPicker(session.plan.targetMinutes);return}changePresetSetting(selectedDurationKey(),Number(input.value))};
+ for(const input of $$('[name=workoutMinutes]'))input.onchange=()=>changeWorkoutDuration(Number(input.value));
  $('#quickRoutine').onchange=e=>selectProgram(e.target.value,state.workoutConfig.planDay);
  $('#imagePause').onclick=()=>{if(session?.phase==='stopped'){session.phase=session.stoppedPhase||'work';session.paused=true;startClock();}if(session?.phase==='feedback')return;if(trainingActive())togglePause();else beginWorkout();syncTrainingLayout();syncDiagramControls()};
  $('#imageSkip').onclick=()=>{if(!session||!['work','rest'].includes(session.phase))return;if(session.phase==='rest'){session.paused=false;endRest()}else{const current=session.steps[session.index].exerciseIndex,indices=incompleteExerciseIndices(session),next=indices.find(i=>i>current)??indices.find(i=>i!==current);if(next!==undefined)goToExercise(next);else toast('마지막 미완료 운동입니다. 재생해서 마무리하세요.')}};
@@ -309,7 +310,7 @@ function showRestPreview(){
 function syncDiagramControls(){
  if(!$('#imagePause')||!state)return;const running=trainingActive(),phase=session?.phase,paused=!!session?.paused,plan=running?session.plan:previewPlan,index=running?session.steps[session.index]?.exerciseIndex:previewIndex;
  $('#imagePlayIcon').hidden=running?(!paused||phase==='prep'||phase==='feedback'):false;$('#stopWorkout').hidden=!running||phase==='feedback';$('#stopWorkout').textContent=plan?.infinite?'서킷 끝내기':'오늘은 여기까지';$('#imagePause').disabled=['prep','feedback'].includes(phase);$('#imagePause').setAttribute('aria-label',running?(phase==='feedback'?'완료 기록 확인':paused?'다시 시작':'일시정지'):'운동 시작');
- $('#imageSkip').hidden=!(running&&paused&&['work','rest'].includes(phase));$('#imageSkip').setAttribute('aria-label',phase==='rest'?'휴식 건너뛰기':'운동 건너뛰기');$('#imageSkipText').textContent=phase==='rest'?'휴식 건너뛰기':'운동 건너뛰기';$('#centerControls').classList.toggle('paused',running&&paused);
+ $('#imageSkip').hidden=!(running&&paused&&['work','rest'].includes(phase));$('#imageSkip').setAttribute('aria-label',phase==='rest'?'휴식 건너뛰기':'운동 건너뛰기');$('#imageSkip').title=phase==='rest'?'휴식 건너뛰기':'운동 건너뛰기';$('#centerControls').classList.toggle('paused',running&&paused);
  $('#nextWorkout').hidden=true;$('#skipRest').hidden=true;$('#undoSet').hidden=true;
  syncDurationPicker(plan?.targetMinutes);$('#durationPicker').hidden=!!plan?.infinite;
  const intensity=running?session.intensity||'normal':state.workoutConfig.intensity||'normal';for(const input of $$('[name=workoutIntensity]')){input.checked=input.value===intensity;input.disabled=['prep','feedback','done','stopped'].includes(phase)}
@@ -334,7 +335,22 @@ function renderOrder(){
 }
 
 
-function syncDurationPicker(minutes){const selected=[30,40,50,60].includes(minutes)?minutes:state?.workoutConfig?.[selectedDurationKey()]||30;for(const input of $$('[name=workoutMinutes]')){input.checked=Number(input.value)===selected;input.disabled=!!trainingActive()}}
+function syncDurationPicker(minutes){const selected=[30,40,50,60].includes(minutes)?minutes:state?.workoutConfig?.[selectedDurationKey()]||30;for(const input of $$('[name=workoutMinutes]')){input.checked=Number(input.value)===selected;input.disabled=session?.phase==='feedback'}}
+
+async function changeWorkoutDuration(minutes){
+ if(![30,40,50,60].includes(minutes)||session?.phase==='feedback')return;
+ if(!session||!['prep','work','rest','stopped'].includes(session.phase)){await changePresetSetting('targetMinutes',minutes);return}
+ if(session.plan.infinite||session.plan.targetMinutes===minutes){syncDurationPicker(session.plan.targetMinutes);return}
+ const c=state.workoutConfig,level=session.plan.level,saved=state.savedPresets.find(p=>p.id===session.plan.presetId);
+ const options={...c,targetMinutes:minutes,intensity:'normal',doseMode:'fit',presetId:session.plan.presetId};
+ const plan=session.plan.compact?createCompactPlan(session.plan.day,level,options):saved?createPresetPlan(session.plan.day,level,{...options,savedPreset:saved}):c.mode==='cardio'?createCardioPlan(level,minutes):timedFreePlan(options,level);
+ session=applyLiveDuration(session,plan);previewPlan=session.plan;c.targetMinutes=minutes;c.doseMode='fit';
+ session.confirmed=session.completedStepIds.length;
+ if(session.phase==='rest')showRestPreview();else showSessionExercise();
+ updateSessionProgress();renderOrder();syncDiagramControls();
+ if(session.phase==='stopped'){state.activeWorkout={...session,paused:true,phase:session.stoppedPhase||'work'};await saveState()}else saveDraft();
+ toast(minutes+'분 기준으로 남은 운동량을 조절했습니다.');
+}
 
 function timedFreePlan(config,level){const plan=createFreeDurationPlan(config,level);plan.title=config.mode==='custom'?'직접 고른 운동':plan.regions.includes('full')?'전신 시간 맞춤':plan.regions.map(partName).join(' · ')+' 시간 맞춤';return plan}
 

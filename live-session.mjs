@@ -63,7 +63,7 @@ function nextId(session){
 
 // Preserve the already traversed queue and its current slot. The future queue
 // includes every remaining ledger row, including work skipped before this slot.
-function updateQueue(session,current){
+export function rebuildLiveQueue(session,current){
  if(!current){session.steps=rests(session,remainingSteps(session));return}
  const sourceCurrent=session.sourceSteps.find(step=>step.stepId===current.stepId);
  const sourcePosition=session.sourceSteps.findIndex(step=>step.stepId===current.stepId);
@@ -124,7 +124,7 @@ export function applyLiveIntensity(session,intensity){
  s.intensity=intensity;
  s.plan.intensity=intensity;
  s.plan.steps=copy(s.sourceSteps);
- updateQueue(s,current);
+ rebuildLiveQueue(s,current);
  return s;
 }
 
