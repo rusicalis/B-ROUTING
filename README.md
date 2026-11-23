@@ -1,10 +1,10 @@
-# BURNING ROUTINE 4.2.3
+# BURNING ROUTINE 4.2.4
 
-운동·할 일 관리 PWA. [앱 실행](https://rusicalis.github.io/B-ROUTING/?view=workout&release=423)
+운동·할 일 관리 PWA. [앱 실행](https://rusicalis.github.io/B-ROUTING/?view=workout&release=424)
 
 ## 운동 조작
 
-그림 중앙 ▶로 시작합니다. 운동·휴식 중 그림을 누르면 멈추며, 중앙에 재생과 건너뛰기가 나타납니다. 운동 건너뛰기와 좌우 이동은 완료를 부여하지 않습니다. 설정된 동작 시간이 끝나면 세트를 자동 완료하며, 다른 앱으로 전환하면 일시정지됩니다.
+그림 중앙 ▶로 시작합니다. 이전·재생·건너뛰기·다음 버튼은 같은 높이48px와 수평 중심선에 맞춰 표시합니다. 운동·휴식 중 그림을 누르면 멈추며, 중앙에 재생과 건너뛰기가 나타납니다. 운동 건너뛰기와 좌우 이동은 완료를 부여하지 않습니다. 설정된 동작 시간이 끝나면 세트를 자동 완료하며, 다른 앱으로 전환하면 일시정지됩니다.
 
 좌우 화살표는 **미완료 운동만** 탐색합니다. 1번을 마치고 2번을 건너뛰었다면 3·4번에서 왼쪽으로 돌아가 2번을 마칠 수 있습니다. 완료한 1번은 다시 나타나지 않습니다. 모든 세트와 마지막 컨디션을 저장해야 전체 완료로 기록합니다. 별도 '남은 운동' 목록은 없습니다.
 
@@ -55,6 +55,6 @@ node --check app.js
 node --check service-worker.js
 ```
 
-현재 Playwright 검증은 `scripts/settings-layout.cjs`(중복 제목/아이콘 제거·버튼 간격·컴팩트 입력·네이티브 크기 초과 격리), `scripts/settings-selection.cjs`(선택 미리보기·적용·기록 보존·모드·같은 줄 입력), `scripts/live-duration-controls.cjs`(운동 중 시간 변경·기록 보존·원형 아이콘), `scripts/compact-live.cjs`(미완료 탐색·자동 완료·강도·재실행·일요일 반복), `scripts/image-first-settings.cjs`(설정·모드·375/320px 입력), `scripts/iphone-fallback.cjs`(그림 실패)입니다. Chrome과 WebKit의 iPhone 13 mini 프로필을 사용합니다. 과거 버전 전용 브라우저 스크립트는 당시 수동 완료·별도 복구 UI의 기록입니다.
+현재 Playwright 검증은 `scripts/playback-alignment.cjs`(네 조작 버튼의 높이·중심선·가로/세로 화면·이동과 휴식 건너뛰기), `scripts/settings-layout.cjs`(중복 제목/아이콘 제거·버튼 간격·컴팩트 입력·네이티브 크기 초과 격리), `scripts/settings-selection.cjs`(선택 미리보기·적용·기록 보존·모드·같은 줄 입력), `scripts/live-duration-controls.cjs`(운동 중 시간 변경·기록 보존·원형 아이콘), `scripts/compact-live.cjs`(미완료 탐색·자동 완료·강도·재실행·일요일 반복), `scripts/image-first-settings.cjs`(설정·모드·375/320px 입력), `scripts/iphone-fallback.cjs`(그림 실패)입니다. Chrome과 WebKit의 iPhone 13 mini 프로필을 사용합니다. 과거 버전 전용 브라우저 스크립트는 당시 수동 완료·별도 복구 UI의 기록입니다.
 
 GitHub main 업로드 시 Workout checks와 Pages 배포가 자동 실행됩니다.

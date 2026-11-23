@@ -1,11 +1,11 @@
 /* Central image playback controls and in-session intensity. */
 .centerControls{position:absolute;inset:90px 16px 65px;z-index:3;pointer-events:none;display:flex;align-items:center;justify-content:center;gap:12px}
 .centerControls .imagePause{position:absolute;inset:0;border-radius:12px;pointer-events:auto;display:grid;place-items:center}
-.centerControls .imagePause span{width:48px;height:48px;padding:0;display:grid;place-items:center;border-radius:50%;background:#ca352c;color:#fff;box-shadow:0 3px 14px #0003}
+.centerControls .imagePause span{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:48px;height:48px;padding:0;display:grid;place-items:center;border-radius:50%;background:#ca352c;color:#fff;box-shadow:0 3px 14px #0003}
 .centerControls .imagePause span[hidden]{display:none!important}
 .centerControls svg{width:24px;height:24px;fill:currentColor;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .centerControls.paused .imagePause{background:#ffffff38}
-.centerControls.paused .imagePause span{transform:translateX(-34px)}
+.centerControls.paused .imagePause span{transform:translate(calc(-50% - 34px),-50%)}
 .imageSkip{z-index:4;pointer-events:auto;position:absolute;left:calc(50% + 10px);top:50%;transform:translateY(-50%);width:48px;height:48px;min-width:48px;min-height:48px;background:#171b22;color:#fff;border:0;border-radius:50%;display:grid;place-items:center;padding:0;box-shadow:0 3px 14px #0003}
 .imageSkip[hidden]{display:none!important}
 .diagramActions{display:none!important}
@@ -14,3 +14,8 @@
 .movementArrow{background:#171b22d9!important;color:white!important;border-radius:8px!important;width:36px!important;height:44px!important;font-size:17px!important}.movementArrow.previous{left:17px}.movementArrow.next{right:17px}.movementArrow:disabled{visibility:hidden}
 
 .intensityPicker input{height:16px!important;min-height:0!important;min-width:16px!important;width:16px!important;padding:0!important;flex:0 0 16px!important}.intensityPicker label:has(input:checked){background:var(--panel)!important;color:var(--text)!important}
+
+/* Navigation and playback share the same containing block and centre line. */
+.centerControls .movementArrow{top:50%;transform:translateY(-50%);height:48px!important;pointer-events:auto;display:grid;place-items:center;padding:0}
+.centerControls .movementArrow.previous{left:0}
+.centerControls .movementArrow.next{right:0}
