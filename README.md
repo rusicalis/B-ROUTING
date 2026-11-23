@@ -1,6 +1,6 @@
-# BURNING ROUTINE 4.2.2
+# BURNING ROUTINE 4.2.3
 
-운동·할 일 관리 PWA. [앱 실행](https://rusicalis.github.io/B-ROUTING/?view=workout&release=422)
+운동·할 일 관리 PWA. [앱 실행](https://rusicalis.github.io/B-ROUTING/?view=workout&release=423)
 
 ## 운동 조작
 
@@ -39,7 +39,7 @@
 
 루틴 선택·요일·운동 종류·프리셋 편집은 **설정 → 운동 설정**에 있습니다. 선택하면 YOUR ROUTINE의 제목·운동 목록·수량이 즉시 바뀝니다. 진행 중인 운동과 다음 선택을 분리해, 선택만으로 기존 완료 기록을 지우지 않습니다. 루틴 적용을 누르면 선택한 미리보기로 전환하며, 같은 루틴을 다시 적용하면 진행을 유지합니다. 기본 분할 외에 하루 4~5개 핵심 동작에 집중하는 추천 프리셋을 선택할 수 있습니다. 직접 편집한 프리셋도 유지합니다.
 
-검정·하양·빨강을 사용하는 **다크 / 라이트** 두 모드입니다. 별도 색상 팔레트 없이 AI로 제작한 BR 아이콘을 사용합니다. [브랜드 자산 안내](assets/brand/README.md)에 제작 정보를 기록했습니다. 화면 모드는 여백을 둔 체크박스 형태의 단일 선택입니다. 화면 꺼짐 방지·알림 활성화·알림 테스트는 한 카드에 통합했고 저장 방식·운동 가이드 소스 설정 카드는 제거했습니다. iPhone 13 mini에서는 제목 아래 요일 간격을 늘리고 시간과 알림을 한 줄에 표시합니다.
+검정·하양·빨강을 사용하는 **다크 / 라이트** 두 모드입니다. 별도 색상 팔레트 없이 AI로 제작한 BR 아이콘을 사용합니다. [브랜드 자산 안내](assets/brand/README.md)에 제작 정보를 기록했습니다. 화면 모드는 여백을 둔 체크박스 형태의 단일 선택입니다. 화면 꺼짐 방지·알림 활성화·알림 테스트는 한 카드에 통합했고 저장 방식·운동 가이드 소스 설정 카드는 제거했습니다. iPhone 13 mini에서는 제목 아래 요일 간격을 늘리고 시간과 알림을 한 줄에 표시합니다. 두 입력은 동일한120×44px 표시 상자로 고정하며, 시간은24시간 HH:mm으로 표시하고 기존 시간 선택 기능을 유지합니다. 설정 상단의 중복 제목/바로가기와 부위별 장식 아이콘은 제거하고 루틴 적용 버튼을 선택 영역 아래로 배치했습니다.
 
 저장 키 `burning-routine-local-v150`, 기존 할 일·기록·성장 트랙·저장 프리셋을 보존합니다. 진행 중인 세션은 새로고침 뒤 일시정지 상태로 복원됩니다. 과거 별도 미완료 목록은 표시하지 않습니다.
 
@@ -55,6 +55,6 @@ node --check app.js
 node --check service-worker.js
 ```
 
-현재 Playwright 검증은 `scripts/settings-selection.cjs`(선택 미리보기·적용·기록 보존·모드·같은 줄 입력), `scripts/live-duration-controls.cjs`(운동 중 시간 변경·기록 보존·원형 아이콘), `scripts/compact-live.cjs`(미완료 탐색·자동 완료·강도·재실행·일요일 반복), `scripts/image-first-settings.cjs`(설정·모드·375/320px 입력), `scripts/iphone-fallback.cjs`(그림 실패)입니다. Chrome과 WebKit의 iPhone 13 mini 프로필을 사용합니다. 과거 버전 전용 브라우저 스크립트는 당시 수동 완료·별도 복구 UI의 기록입니다.
+현재 Playwright 검증은 `scripts/settings-layout.cjs`(중복 제목/아이콘 제거·버튼 간격·컴팩트 입력·네이티브 크기 초과 격리), `scripts/settings-selection.cjs`(선택 미리보기·적용·기록 보존·모드·같은 줄 입력), `scripts/live-duration-controls.cjs`(운동 중 시간 변경·기록 보존·원형 아이콘), `scripts/compact-live.cjs`(미완료 탐색·자동 완료·강도·재실행·일요일 반복), `scripts/image-first-settings.cjs`(설정·모드·375/320px 입력), `scripts/iphone-fallback.cjs`(그림 실패)입니다. Chrome과 WebKit의 iPhone 13 mini 프로필을 사용합니다. 과거 버전 전용 브라우저 스크립트는 당시 수동 완료·별도 복구 UI의 기록입니다.
 
 GitHub main 업로드 시 Workout checks와 Pages 배포가 자동 실행됩니다.
