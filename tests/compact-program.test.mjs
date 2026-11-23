@@ -88,15 +88,46 @@ test('comfortable completion levels add gentle real work without removing prescr
  }
 });
 
-test('intensity is exclusive, bounded, and leaves input objects unchanged',()=>{
+test('intensity is exclusive, clearly separated, and leaves input objects unchanged',()=>{
  const base={id:'pushup',sets:5,reps:10,cycleSeconds:4};
  const normal=scaleExerciseDose(base,'normal'),hard=scaleExerciseDose(base,'hard'),extreme=scaleExerciseDose(base,'extreme');
  assert.deepEqual(base,{id:'pushup',sets:5,reps:10,cycleSeconds:4});assert.notEqual(base,normal);
  assert.equal(normal.reps,10);assert.ok(hard.reps>normal.reps);assert.ok(extreme.reps>hard.reps);
  assert.equal(normalizeIntensity(['hard','extreme']),'normal');assert.equal(normalizeIntensity('bogus'),'normal');
  assert.equal(normalizeIntensity('extreme'),'extreme');
- const cap=scaleExerciseDose({sets:12,reps:24,holdSeconds:90},'extreme');assert.equal(cap.sets,12);assert.equal(cap.reps,24);assert.equal(cap.holdSeconds,90);
- const p=createCompactPlan(1,0,{intensity:'extreme'});assert.equal(p.intensity,'extreme');assert.ok(p.exercises.every(e=>e.sets<=12&&e.reps<=24));
+ const cap=scaleExerciseDose({sets:12,reps:24,holdSeconds:90},'extreme');assert.equal(cap.sets,12);assert.equal(cap.reps,36);assert.equal(cap.holdSeconds,135);
+ const p=createCompactPlan(1,0,{intensity:'extreme'});assert.equal(p.intensity,'extreme');assert.ok(p.exercises.every(e=>e.sets<=12&&e.reps<=36));
+});
+
+test('every finite intensity fits the selected duration with distinct doses and no lost movement types',()=>{
+ const active=p=>p.exercises.reduce((sum,e)=>sum+e.sets*(e.holdSeconds||e.workSeconds||e.reps*e.cycleSeconds)*(e.eachSide?2:1),0);
+ for(const {id} of RECOMMENDED_PRESETS)for(let day=1;day<=6;day++)for(const level of [0,4,12])for(const targetMinutes of [30,40,50,60]){
+  let previous=null;
+  for(const intensity of ['normal','hard','extreme']){
+   const p=createCompactPlan(day,level,{presetId:id,targetMinutes,intensity});
+   const label=`${id} day${day} level${level} ${targetMinutes}min ${intensity}`;
+   assert.ok(p.estimatedSeconds<=targetMinutes*60,label+': '+p.estimatedSeconds);
+   assert.ok(p.estimatedSeconds>=targetMinutes*60-60,label+': avoid large unused time');
+   assert.equal(p.overflow,false,label);assert.equal(p.intensityPolicy,2);
+   assert.equal(p.steps.at(-1).restAfter,0);
+   assert.deepEqual(p.exercises.map(e=>e.id),p.baseExercises.map(e=>e.id));
+   let actual=0;
+   p.steps.forEach((step,index)=>{
+    const e=p.exercises[step.exerciseIndex],next=p.steps[index+1];
+    assert.equal(step.restAfter,!next?0:next.exerciseIndex===step.exerciseIndex?30:60,label);
+    actual+=(e.holdSeconds||e.workSeconds||e.reps*e.cycleSeconds)*(e.eachSide?2:1)+step.restAfter;
+   });
+   assert.equal(p.estimatedSeconds,actual,label);
+   p.exercises.forEach((e,index)=>{
+    assert.ok(Number.isInteger(e.sets)&&e.sets>=1&&e.sets<=p.baseExercises[index].sets,label);
+    assert.equal(e.cycleSeconds,p.baseExercises[index].cycleSeconds);
+    if(e.equipment==='kettlebell'){assert.equal(e.weight,12);assert.equal(e.count,1)}
+    if(previous){const before=previous.exercises[index],field=e.holdSeconds?'holdSeconds':e.workSeconds?'workSeconds':'reps';assert.ok(e[field]>before[field],label+': '+e.id)}
+   });
+   if(previous)assert.ok(active(p)>=active(previous),label+': active work must increase');
+   previous=p;
+  }
+ }
 });
 
 test('progress is shared by paired weekdays and separated from legacy and recommendation tracks',()=>{

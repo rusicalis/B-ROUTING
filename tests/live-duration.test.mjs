@@ -72,7 +72,7 @@ test('a protected late hard set is not added again as an extra set when shorteni
  for(const row of first.slice(0,6))markStepComplete(s,row);
  s.index=s.steps.findIndex(row=>row.stepId===first[6].stepId);
  const result=applyLiveDuration(s,next(30));
- assert.equal(result.plan.exercises[0].sets,Math.max(7,next(30).exercises[0].sets+1));
+ assert.equal(result.plan.exercises[0].sets,7);
  assert.equal(result.intensityBasePlan.exercises[0].sets,next(30).exercises[0].sets);
  assert.deepEqual(stepDose(result),stepDose(s));
  const normal=applyLiveIntensity(result,'normal'),again=applyLiveIntensity(normal,'hard');
@@ -97,4 +97,66 @@ test('resizing an active cardio circuit keeps round order and cardio rest interv
  const target={...structuredClone(plan),targetMinutes:40,exercises:plan.exercises.map(e=>({...e,sets:3}))},result=applyLiveDuration(s,target);
  assert.deepEqual(result.sourceSteps.map(row=>row.exerciseIndex),[0,1,2,0,1,2,0,1,2]);
  assert.ok(result.steps.slice(0,-1).every(row=>row.restAfter===15));assert.equal(result.steps.at(-1).restAfter,0);
+});
+
+test('duration shortening trims future original rows against actual time and keeps credits exact',()=>{
+ const s=fixture(60);markStepComplete(s,s.steps[0]);s.index=1;s.activeMs=1300000;s.setMs=12000;
+ const result=applyLiveDuration(s,next(30));
+ assert.ok(result.plan.estimatedSeconds<=1800);
+ assert.equal(result.plan.overflow,false);
+ assert.deepEqual(result.completedStepIds,[0]);
+ assert.deepEqual(stepDose(result),stepDose(s));
+ assert.equal(result.steps[result.index].stepId,1);
+ assert.equal(incompleteExerciseIndices(result).length,s.plan.exercises.length);
+});
+
+test('a resized reordered circuit retains movement identity through later intensity switches',()=>{
+ const exercises=['a','b','c'].map(id=>({id,sets:2,reps:8,cycleSeconds:4,rest:30}));
+ const plan={kind:'preset',targetMinutes:30,exercises,blocks:[{kind:'circuit',exerciseIndices:[0,2],rounds:2},{kind:'sets',exerciseIndices:[1]}]};
+ const steps=[{exerciseIndex:0,set:1,round:1},{exerciseIndex:2,set:1,round:1},{exerciseIndex:0,set:2,round:2},{exerciseIndex:2,set:2,round:2},{exerciseIndex:1,set:1},{exerciseIndex:1,set:2}];
+ const progress=createProgress(plan,steps),s={...fixture(),plan,...progress,steps:copySteps(progress.sourceSteps)};
+ const target={...structuredClone(plan),targetMinutes:40,exercises:[exercises[2],exercises[1],exercises[0]],blocks:[{kind:'circuit',exerciseIndices:[2,0],rounds:2},{kind:'sets',exerciseIndices:[1]}]};
+ const result=applyLiveDuration(s,target),hard=applyLiveIntensity(result,'hard');
+ assert.deepEqual(result.plan.blocks[0].exerciseIndices,[0,2]);
+ assert.deepEqual(hard.plan.blocks[0].exerciseIndices,[0,2]);
+ assert.deepEqual(hard.sourceSteps.map(row=>hard.plan.exercises[row.exerciseIndex].id),['a','c','a','c','b','b']);
+});
+
+test('shorter duration protects companions in current and completed circuit rounds with honest overflow',()=>{
+ const plan={kind:'preset',targetMinutes:40,exercises:['a','b'].map(id=>({id,sets:3,reps:8,cycleSeconds:4})),blocks:[{kind:'circuit',exerciseIndices:[0,1],rounds:3}]};
+ const steps=[1,2,3].flatMap(round=>[0,1].map(exerciseIndex=>({exerciseIndex,set:round,round}))),progress=createProgress(plan,steps);
+ const s={...fixture(),plan,...progress,steps:copySteps(progress.sourceSteps),index:4,activeMs:1750000,setMs:12000};
+ markStepComplete(s,2);
+ const target={...structuredClone(plan),targetMinutes:30,exercises:plan.exercises.map(e=>({...e,sets:1})),blocks:[{kind:'circuit',exerciseIndices:[0,1],rounds:1}]};
+ const result=applyLiveDuration(s,target);
+ assert.deepEqual(result.sourceSteps.map(row=>[row.exerciseIndex,row.round]),[[0,2],[1,2],[0,3],[1,3]]);
+ assert.deepEqual(result.completedStepIds,[2]);
+ assert.equal(result.steps[result.index].stepId,4);
+ assert.deepEqual(stepDose(result),stepDose(s));
+ assert.equal(result.plan.overflow,true);
+ assert.equal(result.restMs,s.restMs);
+});
+
+test('mixed circuit and ordinary blocks trim rounds together while ordinary sets remain independent',()=>{
+ const plan={kind:'preset',targetMinutes:40,exercises:['a','b','c'].map(id=>({id,sets:3,reps:8,cycleSeconds:4})),blocks:[{kind:'circuit',exerciseIndices:[0,1],rounds:3},{kind:'sets',exerciseIndices:[2]}]};
+ const steps=[...[1,2,3].flatMap(round=>[0,1].map(exerciseIndex=>({exerciseIndex,set:round,round}))),...[1,2,3].map(set=>({exerciseIndex:2,set}))],progress=createProgress(plan,steps);
+ const s={...fixture(),plan,...progress,steps:copySteps(progress.sourceSteps),activeMs:1500000,setMs:0};
+ const target={...structuredClone(plan),targetMinutes:30};
+ const result=applyLiveDuration(s,target);
+ for(const round of new Set(result.sourceSteps.filter(row=>row.exerciseIndex<2).map(row=>row.round)))assert.deepEqual(result.sourceSteps.filter(row=>row.round===round&&row.exerciseIndex<2).map(row=>row.exerciseIndex),[0,1]);
+ assert.ok(result.sourceSteps.some(row=>row.exerciseIndex===2));
+ assert.ok(result.plan.estimatedSeconds<=1800);
+ assert.deepEqual(result.completedStepIds,[]);
+});
+
+test('resizing a stopped rest uses its remaining rest timer exactly like the active rest phase',()=>{
+ const resting=fixture(60);markStepComplete(resting,resting.steps[0]);
+ Object.assign(resting,{index:0,phase:'rest',setMs:64000,restMs:10000,activeMs:84000});
+ const stopped={...structuredClone(resting),phase:'stopped',stoppedPhase:'rest'};
+ const activeResult=applyLiveDuration(resting,next(30)),stoppedResult=applyLiveDuration(stopped,next(30));
+ assert.deepEqual(stoppedResult.sourceSteps,activeResult.sourceSteps);
+ assert.equal(stoppedResult.plan.estimatedSeconds,activeResult.plan.estimatedSeconds);
+ assert.equal(stoppedResult.phase,'stopped');assert.equal(stoppedResult.stoppedPhase,'rest');
+ assert.equal(stoppedResult.restMs,10000);assert.equal(stoppedResult.setMs,64000);
+ assert.deepEqual(stoppedResult.completedStepIds,resting.completedStepIds);
 });

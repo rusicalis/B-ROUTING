@@ -1,5 +1,7 @@
 import {EXERCISES} from './workout-engine.mjs';
 import {hasExercisePreview} from './exercise-media-data.mjs';
+import {planIntensity,normalizeIntensity} from './intensity-policy.mjs';
+export {normalizeIntensity,scaleExerciseDose} from './intensity-policy.mjs';
 
 // Compact plans deliberately keep a small, reviewed movement menu. Longer sessions
 // grow these doses rather than introducing unrelated exercise types.
@@ -17,17 +19,6 @@ export const RECOMMENDED_PRESETS=[
  {id:'compact-basic',name:'추천 · 핵심 동작 집중',description:'같은 주간 분할에서 하루 4~5종목에 집중합니다. 종목을 줄이고 세트와 반복으로 선택 시간을 채웁니다.'},
 ];
 const presetId=options=>RECOMMENDED_PRESETS.some(p=>p.id===options.presetId)?options.presetId:'user-week';
-
-export function normalizeIntensity(value){return ['normal','hard','extreme'].includes(value)?value:'normal'}
-
-/** Scale a base dose once; live switches should always pass the original base. */
-export function scaleExerciseDose(exercise,intensity='normal'){
- const mode=normalizeIntensity(intensity),factor={normal:1,hard:1.15,extreme:1.3}[mode],e={...exercise};
- e.sets=Math.floor(clamp(e.sets,1,12,1));
- e.reps=Math.min(24,Math.max(0,Math.ceil((Number(e.reps)||0)*factor)));
- for(const field of ['holdSeconds','workSeconds'])if(e[field])e[field]=Math.min(90,Math.ceil(e[field]*factor));
- return e;
-}
 
 export function compactTrackKey(day=1,options={}){
  return ['preset','compact-v1',presetId(options),family(safeDay(day))].join(':');
@@ -114,19 +105,13 @@ export function createCompactPlan(day=1,level=0,options={}){
   base=fitDuration(selectExercises(day,level,id),targetMinutes*60-48);
   base.find(e=>e.id==='abs-crunch').workSeconds+=level;
  }
- const exercises=base.map(e=>scaleExerciseDose(e,intensity));
+ const exercises=structuredClone(base);
  const schedule=COMPACT_SCHEDULE[day-1];
  const notes=[infinite?'파이크 5회 → 푸시업 10회 → 스쿼트 15회. 동작 사이 휴식 없이 한 바퀴 후 30초 쉬고 계속 반복합니다.':'세트 사이 30초 · 운동 전환 60초 · 한쪽 동작은 양쪽 시간 포함',
   '완료 기록으로 얻은 단계에 따라 검증된 동작만 점진적으로 바꿉니다.'];
  if(exercises.some(e=>e.requiresStableChair))notes.push('케틀벨 컨센트레이션 컬에는 흔들리지 않는 좌판이 필요합니다.');
- if(intensity!=='normal')notes.push((intensity==='hard'?'하드':'극한')+' 강도는 선택한 기본 시간보다 길어질 수 있습니다. 실제 예상 시간을 확인하세요.');
  const plan={kind:'preset',mainOnly:true,compact:true,presetId:id,doseMode:'fit',day,level,key:compactTrackKey(day,{presetId:id}),title:schedule.name+'요일 · '+schedule.title,targets:[...schedule.targets],regions:[...schedule.targets],targetMinutes,intensity,infinite,exercises,notes,
   baseExercises:base.map(e=>({...e})),coreCount:exercises.length,challengeCount:level>=4&&!infinite?1:0};
  if(infinite)plan.blocks=[{kind:'circuit',exerciseIndices:[0,1,2],rounds:1,infinite:true}];
- plan.steps=buildCompactSteps(plan);plan.estimatedSeconds=estimateCompactSeconds(plan);
- plan.estimatedMinutes=Math.round(plan.estimatedSeconds/6)/10;
- plan.overflowSeconds=infinite?0:Math.max(0,plan.estimatedSeconds-targetMinutes*60);plan.overflow=plan.overflowSeconds>0;
- plan.remainingSeconds=infinite?0:Math.max(0,targetMinutes*60-plan.estimatedSeconds);
- if(infinite)plan.roundSeconds=plan.estimatedSeconds;
- return plan;
+ return planIntensity(plan,intensity);
 }

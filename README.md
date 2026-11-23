@@ -1,6 +1,6 @@
-# BURNING ROUTINE 4.2.4
+# BURNING ROUTINE 4.3.0
 
-운동·할 일 관리 PWA. [앱 실행](https://rusicalis.github.io/B-ROUTING/?view=workout&release=424)
+운동·할 일 관리 PWA. [앱 실행](https://rusicalis.github.io/B-ROUTING/?view=workout&release=430)
 
 ## 운동 조작
 
@@ -29,9 +29,21 @@
 
 ## 강도와 성장
 
-운동 중 **Normal / Hard / Extreme**을 선택하면 앞으로 할 반복 수와 세트 수가 바뀝니다. Hard는 기본 반복·시간의 약 15%와 선택 세트 1개, Extreme은 약 30%와 선택 세트 2개를 추가합니다. 현재 세트의 수량·타이머와 완료 기록은 유지합니다. 강도를 내려도 이미 시작·완료한 세트는 취소하지 않습니다. 완료한 운동 종류는 다시 추가하지 않습니다. 강도를 높이면 선택한 기본 시간보다 길어질 수 있습니다.
+시작 전과 운동 중 **Normal / Hard / Extreme**에 동일한 규칙을 적용합니다. Normal은 기본 수량, Hard는 세트당 반복·유지 시간의 약25%증가, Extreme은 약50%증가입니다. 정수로 올림하며 작은 횟수와 긴 유지 동작도 세 단계가 구분됩니다.
 
-일요일 강도 변경은 앞으로 할 수량을 바꾸며 새 라운드는 한 바퀴가 끝날 때만 추가합니다. 종료 시 실제 완료한 세트를 기록합니다.
+선택한30·40·50·60분 안에서 종목별 균형을 유지하며 세트 수를 재배분합니다. 세트당 수량을 높이면 세트 수는 줄어들 수 있습니다. 장비·동작·반복 템포·세트30초/운동 전환60초 휴식은 유지합니다. 직접 저장한 프리셋과 자유 구성·별도 유산소에도 같은 정책을 적용합니다.
+
+| 월요일 초기30분 | 푸시업 | 전체 예상 |
+|---|---|---|
+| Normal | 6세트×8회 | 29분12초 |
+| Hard | 5세트×10회 | 29분28초 |
+| Extreme | 5세트×12회 | 29분45초 |
+
+완료한 세트·현재 세트의 수량·경과 시간·진행 중인 휴식은 보존하고 다음 세트부터 새 기준을 적용합니다. 다음 세트 미리보기에 바뀐 수량을 표시합니다. 강도를 반복해서 바꿔도 기준 수량에 누적 곱셈하지 않으며, 완료한 운동을 다시 추가하지 않습니다. 이전 버전의 긴 진행 세션도 재실행 시 새 정책으로 보정합니다.
+
+이미 진행한 시간이나 현재 세트·필수 운동만으로 선택 시간을 넘는 경우에는 기록을 보존하고 실제 예상 초과를 표시합니다. 일요일은 시간 제한 없는 서킷을 유지하며, 강도는 앞으로 할 수량에 적용하고 새 라운드는 한 바퀴를 마쳤을 때만 추가합니다.
+
+이 명칭과25/50%는 앱의 운동량 정책입니다. 개인 최대근력의 측정값이나 체감 난도의 동일 비율을 의미하지 않습니다. [ACSM2026 안내](https://acsm.org/resistance-training-guidelines-update-2026/)는 개인 목표에 맞는 부하·운동량 조절을 강조하며, 이 앱의 세 단계 수치를 정한 지침은 아닙니다.
 
 기본 동작부터 배치하고 여유 있게 완료한 기록으로 얻은 단계에 따라 운동량을 소폭 늘립니다. 4단계 이후 검증된 변형 동작을 일부 교체합니다. 달력 날짜나 새 동작이라는 이유로 난도를 올리지 않습니다. 힘들었다면 단계를 유지하고 하루 중복 상승을 막습니다. 단계·수량은 앱의 운영 규칙이며 개인별 효과를 보장하지 않습니다.
 
@@ -55,6 +67,6 @@ node --check app.js
 node --check service-worker.js
 ```
 
-현재 Playwright 검증은 `scripts/playback-alignment.cjs`(네 조작 버튼의 높이·중심선·가로/세로 화면·이동과 휴식 건너뛰기), `scripts/settings-layout.cjs`(중복 제목/아이콘 제거·버튼 간격·컴팩트 입력·네이티브 크기 초과 격리), `scripts/settings-selection.cjs`(선택 미리보기·적용·기록 보존·모드·같은 줄 입력), `scripts/live-duration-controls.cjs`(운동 중 시간 변경·기록 보존·원형 아이콘), `scripts/compact-live.cjs`(미완료 탐색·자동 완료·강도·재실행·일요일 반복), `scripts/image-first-settings.cjs`(설정·모드·375/320px 입력), `scripts/iphone-fallback.cjs`(그림 실패)입니다. Chrome과 WebKit의 iPhone 13 mini 프로필을 사용합니다. 과거 버전 전용 브라우저 스크립트는 당시 수동 완료·별도 복구 UI의 기록입니다.
+현재 Playwright 검증은 `scripts/intensity-controls.cjs`(시작 전/운동 중 강도 일치·현재 세트 보호·시간 변경·기존 세션 보정), `scripts/playback-alignment.cjs`(네 조작 버튼의 높이·중심선·가로/세로 화면·이동과 휴식 건너뛰기), `scripts/settings-layout.cjs`(중복 제목/아이콘 제거·버튼 간격·컴팩트 입력·네이티브 크기 초과 격리), `scripts/settings-selection.cjs`(선택 미리보기·적용·기록 보존·모드·같은 줄 입력), `scripts/live-duration-controls.cjs`(운동 중 시간 변경·기록 보존·원형 아이콘), `scripts/compact-live.cjs`(미완료 탐색·자동 완료·강도·재실행·일요일 반복), `scripts/image-first-settings.cjs`(설정·모드·375/320px 입력), `scripts/iphone-fallback.cjs`(그림 실패)입니다. Chrome과 WebKit의 iPhone 13 mini 프로필을 사용합니다. 과거 버전 전용 브라우저 스크립트는 당시 수동 완료·별도 복구 UI의 기록입니다.
 
 GitHub main 업로드 시 Workout checks와 Pages 배포가 자동 실행됩니다.
